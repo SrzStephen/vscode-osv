@@ -23,6 +23,12 @@ describe("ignores", () => {
     expect(m.isIgnored(vuln("GHSA-q", []))).toBe(false);
   });
 
+  it("does not apply entries whose ignoreUntil is invalid", () => {
+    const entries = parseOsvScannerToml('[[IgnoredVulns]]\nid = "GHSA-bad"\nignoreUntil = "not a date"\n');
+    expect(entries).toHaveLength(1);
+    expect(new IgnoreMatcher([], entries, new Date("2026-10-18")).isIgnored(vuln("GHSA-bad", []))).toBe(false);
+  });
+
   it("returns no entries for invalid TOML", () => {
     expect(parseOsvScannerToml("[[IgnoredVulns\nid =")).toEqual([]);
   });
@@ -33,6 +39,8 @@ describe("ignores", () => {
     expect(await findOsvScannerToml("/root/a/b/package.json", "/root", files)).toBe("/root/a/osv-scanner.toml");
     expect(await findOsvScannerToml("/root/c/package.json", "/root", files)).toBe("/root/osv-scanner.toml");
     expect(await findOsvScannerToml("/root/c/package.json", "/root", { read: async () => undefined })).toBeUndefined();
+    const dotted: FileSource = { read: async (p) => (p === "/root/..foo/osv-scanner.toml" ? "" : undefined) };
+    expect(await findOsvScannerToml("/root/..foo/package.json", "/root", dotted)).toBe("/root/..foo/osv-scanner.toml");
     expect(await findOsvScannerToml("/other/x.json", "/root", files)).toBeUndefined();
   });
 });

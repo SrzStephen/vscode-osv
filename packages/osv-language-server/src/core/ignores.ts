@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { getStaticTOMLValue, parseTOML } from "toml-eslint-parser";
 import type { FileSource } from "./fileSource.js";
 import type { Vuln } from "./types.js";
@@ -12,7 +12,7 @@ export interface IgnoreEntry {
 export class IgnoreMatcher {
   private readonly ids = new Set<string>();
 
-  /** Settings ids always apply; toml entries apply until their ignoreUntil date. */
+  /** Settings ids always apply; toml entries apply until their ignoreUntil date (an invalid date counts as expired). */
   constructor(ids: string[], tomlEntries: IgnoreEntry[], now: Date) {
     for (const id of ids) this.ids.add(id);
     for (const e of tomlEntries) {
@@ -25,10 +25,9 @@ export class IgnoreMatcher {
   }
 }
 
-function toDate(v: unknown): Date | undefined {
-  // TOML dates parse to Date; datetimes may be written as strings by lenient authors.
-  const d = v instanceof Date ? v : typeof v === "string" ? new Date(v) : undefined;
-  return d !== undefined && !Number.isNaN(d.getTime()) ? d : undefined;
+/** TOML dates parse to Date; strings are tried too. Anything else becomes an Invalid Date, which the matcher treats as expired (fail closed). */
+function toDate(v: unknown): Date {
+  return v instanceof Date ? v : typeof v === "string" ? new Date(v) : new Date(NaN);
 }
 
 /** Reads `[[IgnoredVulns]]` entries; invalid TOML yields no entries. */
@@ -47,8 +46,7 @@ export function parseOsvScannerToml(text: string): IgnoreEntry[] {
     const { id, ignoreUntil, reason } = item as Record<string, unknown>;
     if (typeof id !== "string" || id === "") continue;
     const entry: IgnoreEntry = { id };
-    const until = toDate(ignoreUntil);
-    if (until) entry.ignoreUntil = until;
+    if (ignoreUntil !== undefined) entry.ignoreUntil = toDate(ignoreUntil);
     if (typeof reason === "string") entry.reason = reason;
     out.push(entry);
   }
@@ -59,7 +57,7 @@ export function parseOsvScannerToml(text: string): IgnoreEntry[] {
 export async function findOsvScannerToml(filePath: string, rootDir: string, files: FileSource): Promise<string | undefined> {
   const inside = (p: string) => {
     const rel = relative(rootDir, p);
-    return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+    return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
   };
   let dir = dirname(filePath);
   if (!inside(dir)) return undefined;
