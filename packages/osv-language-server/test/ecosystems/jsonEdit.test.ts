@@ -17,10 +17,17 @@ describe("setJsonProperty", () => {
     );
   });
 
-  it("falls back to 2-space indent for tab-indented input", () => {
+  it("keeps tabs on existing lines and uses tabs for the new property", () => {
     const text = '{\n\t"name": "a"\n}\n';
     expect(applyEdits(text, setJsonProperty(text, ["overrides", "qs"], "6.10.3", "u"))).toBe(
-      '{\n  "name": "a",\n  "overrides": {\n    "qs": "6.10.3"\n  }\n}\n',
+      '{\n\t"name": "a",\n\t"overrides": {\n\t\t"qs": "6.10.3"\n\t}\n}\n',
+    );
+  });
+
+  it("edits only the touched line of a tab-indented file", () => {
+    const text = '{\n\t"a": {\n\t\t"qs": "1.0.0"\n\t},\n\t"b": 1\n}\n';
+    expect(applyEdits(text, setJsonProperty(text, ["a", "qs"], "2.0.0", "u"))).toBe(
+      '{\n\t"a": {\n\t\t"qs": "2.0.0"\n\t},\n\t"b": 1\n}\n',
     );
   });
 
