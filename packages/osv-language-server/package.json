@@ -2,7 +2,6 @@
   "name": "osv-language-server",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "engines": {
     "node": ">=20"
   },
