@@ -130,6 +130,8 @@ function readKeyLine(body: string, base: number, what: string): YamlNode {
  * strings and block sequence items are skipped. Throws ParseError on a line it cannot read.
  */
 export function readYamlTree(text: string, what: string): YamlNode[] {
+  // Writers always end the file with a newline, so a missing one means a cut-off last line.
+  if (text !== "" && !text.endsWith("\n")) throw new ParseError(`Truncated ${what}`);
   const top: YamlNode[] = [];
   const stack: Array<{ indent: number; node: YamlNode }> = [];
   for (let pos = 0; pos < text.length; ) {
@@ -147,6 +149,14 @@ export function readYamlTree(text: string, what: string): YamlNode[] {
     stack.push({ indent, node });
   }
   return top;
+}
+
+const VERSION_RE = /^\d+(\.\d+)*(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
+
+/** Returns `version` when it is version-shaped; throws ParseError otherwise (e.g. a cut-off value). */
+export function checkVersion(version: string, what: string): string {
+  if (!VERSION_RE.test(version)) throw new ParseError(`Invalid version in ${what}`);
+  return version;
 }
 
 export function yamlChild(node: YamlNode | undefined, key: string): YamlNode | undefined {

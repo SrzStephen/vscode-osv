@@ -24,11 +24,29 @@ describe.each([["pnpm-v9.yaml"], ["pnpm-v6.yaml"]])("parsePnpmLock (%s)", (file)
 
   it("throws ParseError on truncated input", () => {
     const text = read(file);
-    expect(() => parsePnpmLock(text.slice(0, text.indexOf("packages:") + 40) + "\n  x: [")).toThrow(ParseError);
+    expect(() => parsePnpmLock(text.slice(0, text.indexOf("packages:") + 40) + "\n  x: [\n")).toThrow(ParseError);
   });
 });
 
 describe("parsePnpmLock", () => {
+  it("rejects a file cut mid-line, even inside a version", () => {
+    const text = read("pnpm-v9.yaml");
+    const cut = text.indexOf("version: 4.17.15") + "version: 4.17.".length;
+    expect(() => parsePnpmLock(text.slice(0, cut))).toThrow(ParseError);
+  });
+
+  it("rejects a missing lockfileVersion header or no entries", () => {
+    const text = read("pnpm-v9.yaml");
+    expect(() => parsePnpmLock(text.replace(/^lockfileVersion.*\n/, ""))).toThrow(ParseError);
+    expect(() => parsePnpmLock("lockfileVersion: '9.0'\n")).toThrow(ParseError);
+    expect(() => parsePnpmLock("")).toThrow(ParseError);
+  });
+
+  it("rejects a corrupted package version", () => {
+    const text = read("pnpm-v9.yaml").replace("lodash@4.17.15:", "lodash@4.17.1x5:");
+    expect(() => parsePnpmLock(text)).toThrow(ParseError);
+  });
+
   it("keeps peer-suffixed snapshots under one version entry with their edges", () => {
     const text = [
       "lockfileVersion: '9.0'",

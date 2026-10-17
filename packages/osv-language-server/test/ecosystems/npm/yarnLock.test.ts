@@ -48,6 +48,24 @@ describe.each([["yarn-v1.lock"], ["yarn-berry.lock"]])("parseYarnLock (%s)", (fi
 });
 
 describe("parseYarnLock", () => {
+  it.each(["yarn-v1.lock", "yarn-berry.lock"])("rejects %s cut mid-line, even inside a version", (file) => {
+    const text = read(file);
+    const marker = file === "yarn-v1.lock" ? 'version "4.17.15"' : "version: 4.17.15";
+    const cut = text.indexOf(marker) + marker.length - (file === "yarn-v1.lock" ? 2 : 1);
+    expect(() => parseYarnLock(text.slice(0, cut))).toThrow(ParseError);
+  });
+
+  it("berry: rejects a missing __metadata version or no entries", () => {
+    const text = read("yarn-berry.lock");
+    expect(() => parseYarnLock(text.replace(/^__metadata:\n {2}version: \d+\n/m, "__metadata:\n"))).toThrow(ParseError);
+    expect(() => parseYarnLock("__metadata:\n  version: 8\n")).toThrow(ParseError);
+  });
+
+  it("berry: rejects a corrupted version value", () => {
+    const text = read("yarn-berry.lock").replace("version: 4.17.15", "version: 4.17.1x5");
+    expect(() => parseYarnLock(text)).toThrow(ParseError);
+  });
+
   it("v1: keeps every spec of a merged key as requestedSpecs", () => {
     const text = [
       "# yarn lockfile v1",

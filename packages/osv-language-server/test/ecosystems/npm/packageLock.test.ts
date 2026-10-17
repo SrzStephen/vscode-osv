@@ -84,6 +84,25 @@ describe("parsePackageLock", () => {
     expect(deps).toHaveLength(5000);
   });
 
+  it("parses a 5,000-entry lockfileVersion 1 tree in < 250 ms", () => {
+    const dependencies: Record<string, unknown> = {};
+    for (let i = 0; i < 5000; i++) {
+      const requires = Object.fromEntries(kids(i, 5000).map((k) => [`p${k}`, "1.0.0"]));
+      dependencies[`p${i}`] = { version: "1.0.0", requires };
+    }
+    const text = JSON.stringify({ lockfileVersion: 1, dependencies }, null, 2);
+    let best = Infinity;
+    let deps: ReturnType<typeof parsePackageLock> = [];
+    for (let run = 0; run < 3; run++) {
+      const t0 = performance.now();
+      deps = parsePackageLock(text);
+      best = Math.min(best, performance.now() - t0);
+    }
+    expect(best).toBeLessThan(250);
+    expect(deps).toHaveLength(5000);
+    expect(deps[4999]!.via).toHaveLength(12);
+  });
+
   it("throws ParseError on truncated input", () => {
     const text = read("package-lock.json");
     expect(() => parsePackageLock(text.slice(0, text.length >> 1))).toThrow(ParseError);

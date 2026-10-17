@@ -1,6 +1,7 @@
 import { LineIndex } from "../../core/lineIndex.js";
 import type { ResolvedDep } from "../../core/types.js";
-import { readYamlTree, resolveEntries, yamlChild, type LockEntry } from "./lockCommon.js";
+import { ParseError } from "../types.js";
+import { checkVersion, readYamlTree, resolveEntries, yamlChild, type LockEntry } from "./lockCommon.js";
 
 const ROOT_GROUPS = ["dependencies", "devDependencies", "optionalDependencies"];
 const DEP_GROUPS = ["dependencies", "optionalDependencies"];
@@ -23,6 +24,12 @@ function targetId(name: string, value: string): string {
 /** Parses pnpm-lock.yaml (lockfile v6 and v9). Throws ParseError on invalid YAML. */
 export function parsePnpmLock(text: string): ResolvedDep[] {
   const root = readYamlTree(text, "pnpm-lock.yaml");
+  const hasSection = ["importers", "packages", "snapshots", "dependencies", "devDependencies"].some((k) =>
+    root.some((n) => n.key === k),
+  );
+  if (!root.some((n) => n.key === "lockfileVersion" && n.value) || !hasSection) {
+    throw new ParseError("Incomplete pnpm-lock.yaml");
+  }
   const section = (name: string) => root.find((n) => n.key === name)?.children ?? [];
   const ix = new LineIndex(text);
 
@@ -31,6 +38,7 @@ export function parsePnpmLock(text: string): ResolvedDep[] {
     const parsed = parseKey(node.key);
     const id = parsed && `${parsed.name}@${parsed.version}`;
     if (!parsed || byId.has(id!)) continue;
+    checkVersion(parsed.version, "pnpm-lock.yaml");
     const start = node.keyStart + parsed.offset;
     byId.set(id!, {
       id: id!,

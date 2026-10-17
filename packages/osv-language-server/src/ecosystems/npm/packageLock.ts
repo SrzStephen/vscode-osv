@@ -86,13 +86,20 @@ export function parsePackageLock(text: string): ResolvedDep[] {
       walk(jsonProp(node, "dependencies"), [...chain, node], full);
     }
   };
+  // Each scope's `dependencies` names, built once so lookups stay constant-time.
+  const names = new Map<Node, Set<string>>();
+  const installed = (scope: Node | undefined): Set<string> => {
+    let set = names.get(scope!);
+    if (!set) names.set(scope!, (set = new Set(jsonProps(jsonProp(scope, "dependencies")).map(([k]) => k))));
+    return set;
+  };
   walk(jsonProp(root, "dependencies"), [], []);
   for (const { entry, requires, chain, full } of found) {
     for (const dep of requires) {
       // The nearest enclosing scope that installs `dep` wins, ending at the top level.
       for (let depth = chain.length; depth >= 0; depth--) {
         const scope = depth === 0 ? root : chain[depth - 1];
-        if (jsonProp(jsonProp(scope, "dependencies"), dep)) {
+        if (installed(scope).has(dep)) {
           entry.edges.push([...full.slice(0, depth), dep].join("\0"));
           break;
         }

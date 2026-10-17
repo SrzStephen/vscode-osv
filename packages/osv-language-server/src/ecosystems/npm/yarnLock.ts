@@ -1,7 +1,7 @@
 import { LineIndex } from "../../core/lineIndex.js";
 import type { ResolvedDep } from "../../core/types.js";
 import { ParseError } from "../types.js";
-import { readYamlTree, resolveEntries, yamlChild, type LockEntry } from "./lockCommon.js";
+import { checkVersion, readYamlTree, resolveEntries, yamlChild, type LockEntry } from "./lockCommon.js";
 
 /** Splits `name@spec` at the first `@` after a possible scope marker. */
 function splitSpec(key: string): [name: string, spec: string] {
@@ -12,6 +12,7 @@ function splitSpec(key: string): [name: string, spec: string] {
 
 /** Parses yarn.lock, classic (v1 line format) or berry (YAML). Throws ParseError on invalid input. */
 export function parseYarnLock(text: string): ResolvedDep[] {
+  if (text !== "" && !text.endsWith("\n")) throw new ParseError("Truncated yarn.lock");
   return /^__metadata:/m.test(text) ? parseBerry(text) : parseClassic(text);
 }
 
@@ -78,7 +79,11 @@ function parseBerry(text: string): ResolvedDep[] {
   const workspaceDeps: Array<[string, string]> = [];
   const npm = (spec: string) => spec.replace(/^npm:/, "");
 
-  for (const node of readYamlTree(text, "yarn.lock")) {
+  const nodes = readYamlTree(text, "yarn.lock");
+  if (!yamlChild(nodes.find((n) => n.key === "__metadata"), "version")?.value || nodes.length < 2) {
+    throw new ParseError("Incomplete yarn.lock");
+  }
+  for (const node of nodes) {
     if (node.key === "__metadata") continue;
     const specs = node.key.split(", ").map(splitSpec);
     const deps = (yamlChild(node, "dependencies")?.children ?? []).map((d): [string, string] => [d.key, npm(d.value)]);
@@ -93,7 +98,7 @@ function parseBerry(text: string): ResolvedDep[] {
       entry: {
         id: node.key,
         name: specs[0]![0],
-        version: version.value,
+        version: checkVersion(version.value, "yarn.lock"),
         range: ix.range(version.valueStart, version.valueStart + version.value.length),
         requestedSpecs: specs.map(([, spec]) => npm(spec)),
         edges: [],
