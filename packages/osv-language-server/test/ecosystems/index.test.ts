@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyFile, registerModule } from "../../src/ecosystems/index.js";
+import { ALL_MODULES, classifyFile, registerModule } from "../../src/ecosystems/index.js";
 import type { EcosystemModule } from "../../src/ecosystems/types.js";
 
 function fake(over: Partial<EcosystemModule>): EcosystemModule {
@@ -32,6 +32,13 @@ describe("classifyFile", () => {
   it("prefers the manifest role when both patterns match", () => {
     const m = fake({ id: "both", manifests: ["both.txt"], lockfiles: ["both.txt"] });
     expect(classifyFile("d/both.txt", [m])?.role).toBe("manifest");
+  });
+
+  it("replaces a module registered twice under the same id", () => {
+    registerModule(fake({ id: "dup" }));
+    registerModule(fake({ id: "dup", manifests: ["dup.txt"] }));
+    expect(ALL_MODULES.filter((m) => m.id === "dup")).toHaveLength(1);
+    expect(classifyFile("dup.txt")?.module.id).toBe("dup");
   });
 
   it("matches dotfiles", () => {

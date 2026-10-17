@@ -17,6 +17,13 @@ describe("setJsonProperty", () => {
     );
   });
 
+  it("falls back to 2-space indent for tab-indented input", () => {
+    const text = '{\n\t"name": "a"\n}\n';
+    expect(applyEdits(text, setJsonProperty(text, ["overrides", "qs"], "6.10.3", "u"))).toBe(
+      '{\n  "name": "a",\n  "overrides": {\n    "qs": "6.10.3"\n  }\n}\n',
+    );
+  });
+
   it("stamps the uri on every edit", () => {
     const edits = setJsonProperty("{}", ["a"], 1, "file:///p.json");
     expect(edits.length).toBeGreaterThan(0);
