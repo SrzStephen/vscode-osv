@@ -92,4 +92,16 @@ describe("OsvService.lookup", () => {
     expect(r.offline).toBe(true);
     expect(r.results.has(queryKey(q))).toBe(false);
   });
+
+  it("drops a record the API rejects with 404 and keeps the rest", async () => {
+    fake = await startFakeOsv({ packages: { [queryKey(q)]: ["V-1", "V-gone", "V-2"] }, records: { "V-1": rec("V-1"), "V-2": rec("V-2") } });
+    const svc = setup(fake.url);
+    const r = await svc.lookup([q]);
+    expect(r.offline).toBe(false);
+    expect(r.skipped).toEqual(["V-gone"]);
+    expect(r.results.get(queryKey(q))!.records.map((x) => x.id)).toEqual(["V-1", "V-2"]);
+    const again = await svc.lookup([q]);
+    expect(again.results.get(queryKey(q))!.records.map((x) => x.id)).toEqual(["V-1", "V-2"]);
+    expect(count(fake, "/v1/querybatch")).toBe(1);
+  });
 });

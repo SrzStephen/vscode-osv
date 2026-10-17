@@ -140,10 +140,25 @@ export class OsvClient {
       }
       if (attempt < MAX_ATTEMPTS) {
         const backoff = BACKOFF_BASE_MS * 2 ** (attempt - 1);
-        await this.sleep(wait ?? backoff / 2 + Math.random() * (backoff / 2));
+        await this.abortableSleep(wait ?? backoff / 2 + Math.random() * (backoff / 2), signal);
       }
     }
     throw new OsvUnavailableError(`OSV API unavailable after ${MAX_ATTEMPTS} attempts`, { cause: lastError });
+  }
+
+  private async abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+    if (!signal) return this.sleep(ms);
+    signal.throwIfAborted();
+    let onAbort!: () => void;
+    const aborted = new Promise<never>((_, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
+    try {
+      await Promise.race([this.sleep(ms), aborted]);
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
   }
 
   private async acquireVuln(): Promise<void> {

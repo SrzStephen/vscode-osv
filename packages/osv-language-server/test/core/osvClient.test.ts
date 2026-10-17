@@ -116,6 +116,24 @@ describe("OsvClient.queryBatch", () => {
     await expect(mkClient(url).queryBatch([pq("a")])).rejects.toBeInstanceOf(OsvUnavailableError);
   });
 
+  it("stops retrying and rejects with the abort reason when aborted during backoff", async () => {
+    fake = await startFakeOsv({ packages: {}, records: {} });
+    fake.failNext(503, 10);
+    const ctl = new AbortController();
+    const reason = new Error("cancelled");
+    const client = new OsvClient({
+      baseUrl: fake.url,
+      userAgent: "t",
+      dispatcher: agent,
+      sleep: () => {
+        queueMicrotask(() => ctl.abort(reason));
+        return new Promise<void>(() => {});
+      },
+    });
+    await expect(client.queryBatch([pq("a")], ctl.signal)).rejects.toBe(reason);
+    expect(fake.requests).toHaveLength(1);
+  });
+
   it("does not retry other 4xx errors", async () => {
     fake = await startFakeOsv({ packages: {}, records: {} });
     fake.failNext(400, 5);

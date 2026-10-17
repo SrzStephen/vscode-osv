@@ -1,10 +1,17 @@
 import { isFresh, type DiskCache, type PackageEntry } from "./cache.js";
-import { OsvUnavailableError, type OsvClient } from "./osvClient.js";
+import { OsvRequestError, OsvUnavailableError, type OsvClient } from "./osvClient.js";
 import type { OsvRecord, PackageQuery } from "./types.js";
 
 export interface LookupResult {
   records: OsvRecord[];
   cached: boolean;
+}
+
+export interface LookupOutcome {
+  results: Map<string, LookupResult>;
+  offline: boolean;
+  /** Ids of vuln records dropped because the API rejected them with a non-retryable 4xx (e.g. 404). */
+  skipped: string[];
 }
 
 export const queryKey = (q: PackageQuery): string => `${q.ecosystem}|${q.name}|${q.version}`;
@@ -16,7 +23,7 @@ export class OsvService {
     private readonly getTtlHours: () => number,
   ) {}
 
-  async lookup(queries: PackageQuery[], signal?: AbortSignal): Promise<{ results: Map<string, LookupResult>; offline: boolean }> {
+  async lookup(queries: PackageQuery[], signal?: AbortSignal): Promise<LookupOutcome> {
     const unique = new Map<string, PackageQuery>();
     for (const q of queries) unique.set(queryKey(q), q);
 
@@ -37,26 +44,32 @@ export class OsvService {
       if (entry) stale.set(key, entry);
       toFetch.push([key, q]);
     }
-    if (toFetch.length === 0) return { results, offline: false };
+    if (toFetch.length === 0) return { results, offline: false, skipped: [] };
 
+    const skipped = new Set<string>();
     try {
       const refs = await this.client.queryBatch(toFetch.map(([, q]) => q), signal);
-      const fetching = new Map<string, Promise<OsvRecord>>();
-      const ensure = (ref: { id: string; modified: string }): Promise<OsvRecord> => {
+      const fetching = new Map<string, Promise<OsvRecord | undefined>>();
+      const ensure = (ref: { id: string; modified: string }): Promise<OsvRecord | undefined> => {
         let p = fetching.get(ref.id);
         if (!p) {
-          p = this.ensureVuln(ref, signal);
+          p = this.ensureVuln(ref, signal).catch((e: unknown) => {
+            if (!(e instanceof OsvRequestError)) throw e;
+            skipped.add(ref.id);
+            return undefined;
+          });
           fetching.set(ref.id, p);
         }
         return p;
       };
       const fetched = await Promise.all(toFetch.map((_, i) => Promise.all(refs[i]!.map(ensure))));
+      const kept = (i: number) => refs[i]!.filter((r) => !skipped.has(r.id));
       const fetchedAt = new Date().toISOString();
       for (const [i, [key, q]] of toFetch.entries()) {
-        await this.cache.putPackage(q, { fetchedAt, vulnIds: refs[i]!.map(({ id, modified }) => ({ id, modified })) });
-        results.set(key, { records: live(fetched[i]!), cached: false });
+        await this.cache.putPackage(q, { fetchedAt, vulnIds: kept(i).map(({ id, modified }) => ({ id, modified })) });
+        results.set(key, { records: live(fetched[i]!.filter((r): r is OsvRecord => r !== undefined)), cached: false });
       }
-      return { results, offline: false };
+      return { results, offline: false, skipped: [...skipped] };
     } catch (e) {
       if (!(e instanceof OsvUnavailableError)) throw e;
       for (const [key] of toFetch) {
@@ -65,7 +78,7 @@ export class OsvService {
         const records = await this.cachedRecords(entry, true);
         results.set(key, { records: live(records!), cached: true });
       }
-      return { results, offline: true };
+      return { results, offline: true, skipped: [...skipped] };
     }
   }
 
