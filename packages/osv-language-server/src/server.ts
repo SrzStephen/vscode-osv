@@ -18,6 +18,7 @@ import { nodeFileSource, overlayFileSource, type FileSource } from "./core/fileS
 import { findOsvScannerToml, IgnoreMatcher, parseOsvScannerToml } from "./core/ignores.js";
 import { OsvClient } from "./core/osvClient.js";
 import { OsvService } from "./core/osvService.js";
+import { createDispatcher } from "./core/tls.js";
 import { USER_AGENT } from "./core/userAgent.js";
 import { scanDocument, type ScanContext } from "./core/scanner.js";
 import { DEFAULT_SETTINGS, normalizeSettings, type Settings } from "./core/settings.js";
@@ -69,12 +70,12 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
   let roots: string[] = [];
 
   let cache: DiskCache | undefined;
-  let service: { baseUrl: string; osv: OsvService } | undefined;
+  let service: { baseUrl: string; caCertificatePath: string; osv: OsvService } | undefined;
   const getCache = (): DiskCache => (cache ??= new DiskCache(cacheDir));
   const getService = (): OsvService => {
-    if (service?.baseUrl !== settings.apiBaseUrl) {
-      const client = new OsvClient({ baseUrl: settings.apiBaseUrl, userAgent: USER_AGENT });
-      service = { baseUrl: settings.apiBaseUrl, osv: new OsvService(client, getCache(), () => settings.cacheTtlHours) };
+    if (service?.baseUrl !== settings.apiBaseUrl || service.caCertificatePath !== settings.caCertificatePath) {
+      const client = new OsvClient({ baseUrl: settings.apiBaseUrl, userAgent: USER_AGENT, dispatcher: createDispatcher(settings.caCertificatePath) });
+      service = { baseUrl: settings.apiBaseUrl, caCertificatePath: settings.caCertificatePath, osv: new OsvService(client, getCache(), () => settings.cacheTtlHours) };
     }
     return service.osv;
   };

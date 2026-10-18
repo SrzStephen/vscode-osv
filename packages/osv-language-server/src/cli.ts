@@ -8,6 +8,7 @@ import { nodeFileSource } from "./core/fileSource.js";
 import { findOsvScannerToml, IgnoreMatcher, parseOsvScannerToml } from "./core/ignores.js";
 import { OsvClient } from "./core/osvClient.js";
 import { OsvService } from "./core/osvService.js";
+import { createDispatcher } from "./core/tls.js";
 import { USER_AGENT } from "./core/userAgent.js";
 import type { ScanContext } from "./core/scanner.js";
 import { DEFAULT_SETTINGS, type MinimumSeverity, type Settings } from "./core/settings.js";
@@ -118,7 +119,7 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
       apiBaseUrl: values["api-base-url"]?.replace(/\/+$/, "") || DEFAULT_SETTINGS.apiBaseUrl,
     };
     const cwd = io.cwd;
-    const client = new OsvClient({ baseUrl: settings.apiBaseUrl, userAgent: USER_AGENT });
+    const client = new OsvClient({ baseUrl: settings.apiBaseUrl, userAgent: USER_AGENT, dispatcher: createDispatcher(settings.caCertificatePath, io.env) });
     const service = new OsvService(client, new DiskCache(values["cache-dir"] ?? defaultCacheDir(process.platform, io.env)), () => settings.cacheTtlHours);
 
     // Offline lookups return no result for a package with no cached entry.

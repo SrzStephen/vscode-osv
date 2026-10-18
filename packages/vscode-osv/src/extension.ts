@@ -32,6 +32,7 @@ const SETTING_KEYS = [
   "scanWorkspaceOnStartup",
   "cacheTtlHours",
   "apiBaseUrl",
+  "caCertificatePath",
   "ignoredVulnerabilities",
   "offerLockCommand",
 ] as const;

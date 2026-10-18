@@ -3,6 +3,8 @@
 # Requires: node >= 20, npm, just. Integration tests on Linux also need xvfb-run.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
+# Loads a gitignored .env so each checkout can set SSL_CERT_FILE / SSL_CERT_DIR for extra CA certificates
+set dotenv-load := true
 
 default:
     @just --list
@@ -58,6 +60,8 @@ vscode fixture="vulnerable": build
     mkdir -p "$root"
     dir="$(mktemp -d "$root/{{fixture}}.XXXXXX")"
     cp -r "$src/." "$dir"
+    # Node adds this file to its trust store for VS Code's own requests, such as schema downloads
+    if [ -n "${SSL_CERT_FILE:-}" ]; then export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"; fi
     code --new-window --extensionDevelopmentPath="$PWD/packages/vscode-osv" "$dir"
     echo "Opened $dir with the extension loaded from $PWD/packages/vscode-osv"
 

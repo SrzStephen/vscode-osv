@@ -86,8 +86,18 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 | `osv.scanWorkspaceOnStartup` | `false` | Run workspace scan when the server starts |
 | `osv.cacheTtlHours` | `48` | Package-result freshness, minimum 1 |
 | `osv.apiBaseUrl` | `"https://api.osv.dev"` | OSV API base (mirror/proxy) |
+| `osv.caCertificatePath` | `""` | PEM file of extra CA certificates to trust (see below) |
 | `osv.ignoredVulnerabilities` | `[]` | Vulnerability IDs (any alias) to suppress |
 | `osv.offerLockCommand` | `"ask"` | `ask` \| `always` \| `never` |
+
+**Corporate CA certificates:** behind a TLS-inspecting proxy, set `osv.caCertificatePath` to a PEM
+file, or set the standard `SSL_CERT_FILE` variable to one. `SSL_CERT_DIR` is also read: every `.pem`
+or `.crt` file in it is trusted. These are added to the default trust store, not used in its place.
+An empty setting falls back to `SSL_CERT_FILE`. For this repo, put `SSL_CERT_FILE=/path/to/ca.pem`
+in a `.env` file at the root: `just` loads it, `just vscode` also sets `NODE_EXTRA_CA_CERTS` so
+VS Code's own requests (such as JSON schema downloads) trust it, and `.env` is gitignored. Because
+`just` exports `.env` to every recipe, other tools run through `just` also see `SSL_CERT_FILE`. The
+setting is ignored in untrusted workspaces.
 
 **Ignore file:** an `osv-scanner.toml` in the workspace root (or any ancestor of the scanned
 file up to the root) is read for `[[IgnoredVulns]]` entries (`id`, optional `ignoreUntil`,
