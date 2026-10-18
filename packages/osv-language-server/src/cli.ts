@@ -131,7 +131,8 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
       },
     };
 
-    const paths = positionals.length > 0 ? matchingPaths(positionals, cwd) : await discoverFiles(cwd, ALL_MODULES);
+    const warn = (path: string, message: string) => io.stderr(`warning: could not check ${relative(cwd, path) || "."}: ${message}\n`);
+    const paths = positionals.length > 0 ? matchingPaths(positionals, cwd) : await discoverFiles(cwd, ALL_MODULES, { onError: warn });
 
     // Each file is governed by its nearest osv-scanner.toml, so files are scanned in one batch per toml.
     const byToml = new Map<string | undefined, string[]>();
@@ -144,11 +145,18 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
     let offline = false;
     for (const [toml, group] of byToml) {
       const entries = toml ? parseOsvScannerToml((await nodeFileSource.read(toml)) ?? "") : [];
-      const ctx: ScanContext = { files: nodeFileSource, osv, settings, ignores: new IgnoreMatcher([], entries, new Date()), rootDir: cwd };
+      const ctx: ScanContext = {
+        files: nodeFileSource,
+        osv,
+        settings,
+        ignores: new IgnoreMatcher([], entries, new Date()),
+        rootDir: cwd,
+        log: (m) => io.stderr(`warning: ${m}\n`),
+      };
       const result = await scanFiles(group, ctx);
       findings.push(...result.findings);
       offline ||= result.offline;
-      for (const e of result.parseErrors) io.stderr(`warning: could not check ${relative(cwd, e.path)}: ${e.message}\n`);
+      for (const e of result.parseErrors) warn(e.path, e.message);
     }
     findings.sort((a, b) => a.uri.localeCompare(b.uri) || a.range.start.line - b.range.start.line || a.range.start.character - b.range.start.character);
 

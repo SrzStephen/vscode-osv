@@ -134,6 +134,34 @@ describe("scanDocument", () => {
     expect(r.findings.find((f) => f.name === "lodash")!.via).toBeUndefined();
   });
 
+  it("a malformed OSV record is skipped and logged; the valid records still yield the finding", async () => {
+    const malformed = {
+      id: "GHSA-bad0-bad0-bad0",
+      modified: "2026-01-01T00:00:00Z",
+      affected: [{ package: { ecosystem: "npm", name: "lodash" }, ranges: [{ type: "SEMVER" }] }],
+    } as unknown as OsvRecord;
+    const logged: string[] = [];
+    const base = ctx({ "/ws/package-lock.json": lockWithLodash("4.17.15") });
+    const c: ScanContext = {
+      ...base,
+      log: (m) => logged.push(m),
+      osv: {
+        lookup: async (queries: PackageQuery[]) => ({
+          results: new Map(queries.map((q) => [`${q.ecosystem}|${q.name}|${q.version}`, { records: [malformed, ...lodashRecords()], cached: false }])),
+          offline: false,
+          skipped: [],
+        }),
+      },
+    };
+    const r = await scanDocument(uri, "/ws/package.json", pkgJson, c);
+    expect(r.findings).toHaveLength(1);
+    expect(r.findings[0]!.fix.target).toBe("4.17.21");
+    expect(r.findings[0]!.vulns.map((v) => v.id)).not.toContain("GHSA-bad0-bad0-bad0");
+    expect(r.findings[0]!.vulns).toHaveLength(3);
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toContain("GHSA-bad0-bad0-bad0");
+  });
+
   it("ignored and below-threshold vulns are removed; empty findings dropped", async () => {
     const files = { "/ws/package-lock.json": lockWithLodash("4.17.15") };
     const some = await scanDocument(uri, "/ws/package.json", pkgJson, ctx(files, { ignored: ["GHSA-35jh-r3h4-6jhm"] }));

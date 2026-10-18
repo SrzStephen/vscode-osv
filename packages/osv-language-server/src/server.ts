@@ -111,6 +111,7 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
       settings: effective,
       ignores: new IgnoreMatcher(effective.ignoredVulnerabilities, toml, new Date()),
       rootDir,
+      log: (m) => connection.console.warn(m),
     };
   }
 
@@ -185,7 +186,7 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
     // A document edited (or opened) while this scan runs has a newer scan of its own; this one must not overwrite it.
     const versionsAtStart = new Map(documents.all().map((d) => [d.uri, d.version]));
     for (const root of roots) {
-      const paths = await discoverFiles(root, ALL_MODULES);
+      const paths = await discoverFiles(root, ALL_MODULES, { onError: (path, message) => connection.console.warn(`workspace scan: skipped ${path}: ${message}`) });
       // Ignores come from the root's osv-scanner.toml; the lookup starts from a file directly in the root.
       const ctx = await contextFor(join(root, "osv-scanner.toml"), root, override ? { minimumSeverity: override } : {});
       const result = await scanFiles(paths, ctx);

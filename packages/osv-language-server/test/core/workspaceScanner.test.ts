@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -6,7 +6,8 @@ import { nodeFileSource } from "../../src/core/fileSource.js";
 import { IgnoreMatcher } from "../../src/core/ignores.js";
 import type { ScanContext } from "../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../src/core/settings.js";
-import type { PackageQuery } from "../../src/core/types.js";
+import type { OsvRecord, PackageQuery } from "../../src/core/types.js";
+import type { EcosystemModule } from "../../src/ecosystems/types.js";
 import { ALL_MODULES } from "../../src/ecosystems/index.js";
 import { discoverFiles, scanFiles } from "../../src/core/workspaceScanner.js";
 
@@ -41,6 +42,22 @@ describe("discoverFiles", () => {
     const found = await discoverFiles(root, ALL_MODULES, { exclude: ["legacy"] });
     expect(found).not.toContain(join(root, "packages", "a", "legacy", "package.json"));
     expect(found).toHaveLength(2);
+  });
+
+  it("an unreadable subdirectory is reported and does not abort discovery", async () => {
+    const locked = join(root, "locked");
+    mkdirSync(locked);
+    writeFileSync(join(locked, "package.json"), "{}");
+    chmodSync(locked, 0o000);
+    try {
+      const errors: { path: string; message: string }[] = [];
+      const found = await discoverFiles(root, ALL_MODULES, { onError: (path, message) => errors.push({ path, message }) });
+      expect(found.sort()).toEqual([join(root, "package.json"), join(root, "svc", "requirements.txt")].sort());
+      expect(errors.map((e) => e.path)).toEqual([locked]);
+      expect(errors[0]!.message).toContain("EACCES");
+    } finally {
+      chmodSync(locked, 0o755);
+    }
   });
 
   it("a pattern with a slash stays anchored to the root", async () => {
@@ -86,5 +103,41 @@ describe("scanFiles", () => {
     const r = await scanFiles([join(root, "package.json"), join(root, "missing", "package.json")], ctx);
     expect(r.parseErrors.map((e) => e.path)).toEqual([join(root, "package.json"), join(root, "missing", "package.json")]);
     expect(r.parseErrors[1]!.message).toBe("unreadable");
+  });
+
+  it("a module that throws is isolated to its file; other files still yield findings", async () => {
+    const npm = ALL_MODULES.find((m) => m.id === "npm")!;
+    const broken: EcosystemModule = {
+      ...npm,
+      id: "broken",
+      manifests: ["boom.json"],
+      lockfiles: [],
+      parseManifest: () => {
+        throw new TypeError("module bug");
+      },
+    };
+    writeFileSync(join(root, "boom.json"), "{}");
+    const lodash: OsvRecord = {
+      id: "GHSA-test-lodash",
+      modified: "2026-01-01T00:00:00Z",
+      affected: [{ package: { ecosystem: "npm", name: "lodash" }, ranges: [{ type: "SEMVER", events: [{ introduced: "0" }, { fixed: "4.17.21" }] }] }],
+    };
+    const ctx: ScanContext = {
+      files: nodeFileSource,
+      osv: {
+        lookup: async (queries: PackageQuery[]) => ({
+          results: new Map(queries.map((q) => [`${q.ecosystem}|${q.name}|${q.version}`, { records: q.name === "lodash" ? [lodash] : [], cached: false }])),
+          offline: false,
+          skipped: [],
+        }),
+      },
+      settings: DEFAULT_SETTINGS,
+      ignores: new IgnoreMatcher([], [], new Date()),
+      rootDir: root,
+      modules: [broken, ...ALL_MODULES],
+    };
+    const r = await scanFiles([join(root, "boom.json"), join(root, "package.json")], ctx);
+    expect(r.parseErrors).toEqual([{ path: join(root, "boom.json"), message: "module bug" }]);
+    expect(r.findings.map((f) => `${f.name}@${f.current}`)).toEqual(["lodash@4.17.15"]);
   });
 });

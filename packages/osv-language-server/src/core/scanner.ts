@@ -20,6 +20,8 @@ export interface ScanContext {
   ignores: IgnoreMatcher;
   rootDir: string;
   modules?: EcosystemModule[];
+  /** Receives warnings such as skipped malformed OSV records; defaults to stderr. */
+  log?: (message: string) => void;
 }
 
 type LookupResults = Map<string, { records: OsvRecord[]; cached: boolean }>;
@@ -166,9 +168,15 @@ export async function prepareDocument(
       for (const c of candidates) {
         const found = results.get(queryKey({ ecosystem: module.osvEcosystem, name: c.name, version: c.version }));
         if (!found || found.records.length === 0) continue;
-        const vulns = mergeAliases(found.records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
+        const records = found.records.filter((r) => {
+          if (isWellFormedRecord(r)) return true;
+          (ctx.log ?? logToStderr)(`skipped malformed OSV record ${typeof r?.id === "string" ? r.id : "(no id)"} for ${c.name}`);
+          return false;
+        });
+        if (records.length === 0) continue;
+        const vulns = mergeAliases(records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
         if (vulns.length === 0) continue;
-        const fix = calculateFix(found.records, module.osvEcosystem, c.name, c.version, module.versioning, module.normalizeName);
+        const fix = calculateFix(records, module.osvEcosystem, c.name, c.version, module.versioning, module.normalizeName);
         const update = fix.target === undefined ? undefined : c.buildUpdate(fix.target);
         const finding: Finding = {
           key: findingKey({ source: c.source, ecosystem: module.osvEcosystem, name: c.name, current: c.version, range: c.range }),
@@ -216,6 +224,25 @@ export async function prepareDocument(
       ...(widened !== undefined ? { widened } : {}),
     };
   }
+}
+
+const logToStderr = (message: string): void => void process.stderr.write(`${message}\n`);
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+/** Whether a record has the shape the fix calculator walks; a malformed one is skipped (spec §14.2). */
+function isWellFormedRecord(r: OsvRecord): boolean {
+  if (!isObject(r) || typeof r.id !== "string") return false;
+  if (r.affected === undefined) return true;
+  if (!Array.isArray(r.affected)) return false;
+  return r.affected.every(
+    (a: unknown) =>
+      isObject(a) &&
+      (a.package === undefined || (isObject(a.package) && typeof a.package.name === "string")) &&
+      (a.versions === undefined || Array.isArray(a.versions)) &&
+      (a.ranges === undefined ||
+        (Array.isArray(a.ranges) && a.ranges.every((rg: unknown) => isObject(rg) && Array.isArray(rg.events) && rg.events.every(isObject)))),
+  );
 }
 
 /** Unknown severity is kept: hiding a vulnerability of unknown severity would fail open. */
