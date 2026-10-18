@@ -98,6 +98,42 @@ describe("scanDocument", () => {
     expect(qs.update!.edit[0]!.uri).toBe(uri);
   });
 
+  it("a nested copy of a declared package stays transitive with its via chain", async () => {
+    const manifest = '{"dependencies":{"lodash":"^4.17.21","foo":"1.0.0"}}';
+    const lock = lockWithLodash(
+      "4.17.21",
+      {
+        "node_modules/foo": { version: "1.0.0", dependencies: { lodash: "4.17.10" } },
+        "node_modules/foo/node_modules/lodash": { version: "4.17.10" },
+      },
+      { foo: "1.0.0" },
+    );
+    const r = await scanDocument("file:///ws/package-lock.json", "/ws/package-lock.json", lock, ctx({ "/ws/package.json": manifest }));
+    const nested = r.findings.filter((f) => f.name === "lodash" && f.current === "4.17.10");
+    expect(nested).toHaveLength(1);
+    expect(nested[0]).toMatchObject({ source: "lockfile", direct: false, via: ["foo"], update: { kind: "override" } });
+  });
+
+  it("yarn v1: the declared entry is promoted to direct from the manifest", async () => {
+    const manifest = '{"dependencies":{"lodash":"^4.17.15","foo":"^1.0.0"}}';
+    const yarnLock = [
+      "# yarn lockfile v1",
+      "",
+      "",
+      "foo@^1.0.0:",
+      '  version "1.0.0"',
+      "  dependencies:",
+      '    lodash "^4.17.15"',
+      "",
+      "lodash@^4.17.15:",
+      '  version "4.17.15"',
+      "",
+    ].join("\n");
+    const r = await scanDocument("file:///ws/yarn.lock", "/ws/yarn.lock", yarnLock, ctx({ "/ws/package.json": manifest }));
+    expect(r.findings.find((f) => f.name === "lodash")).toMatchObject({ source: "lockfile", direct: true, update: { kind: "direct" } });
+    expect(r.findings.find((f) => f.name === "lodash")!.via).toBeUndefined();
+  });
+
   it("ignored and below-threshold vulns are removed; empty findings dropped", async () => {
     const files = { "/ws/package-lock.json": lockWithLodash("4.17.15") };
     const some = await scanDocument(uri, "/ws/package.json", pkgJson, ctx(files, { ignored: ["GHSA-35jh-r3h4-6jhm"] }));

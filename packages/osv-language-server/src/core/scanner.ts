@@ -6,7 +6,7 @@ import type { FileSource } from "./fileSource.js";
 import { calculateFix } from "./fixCalculator.js";
 import { findingKey } from "./findingKey.js";
 import type { IgnoreMatcher } from "./ignores.js";
-import { findLockfile, findManifestForLockfile, resolveVersion } from "./lockfileResolver.js";
+import { findLockfile, findManifestForLockfile, pickLockedEntry, resolveVersion } from "./lockfileResolver.js";
 import type { OsvService } from "./osvService.js";
 import { queryKey } from "./osvService.js";
 import { isEcosystemEnabled, type Settings } from "./settings.js";
@@ -120,9 +120,15 @@ export async function prepareDocument(
     }
     const manifestUri = manifestFile ? siblingUri(uri, manifestFile.path) : undefined;
     const declaredByName = new Map((declared ?? []).map((d) => [module.normalizeName(d.name), d]));
+    // The manifest promotes only the copy its declaration resolves to; other copies (nested
+    // installs, other versions) keep the parser's direct flag and via chain. When the copy cannot
+    // be told apart (npm v1 / yarn v1, Task 10 ruling), every copy is promoted as before.
+    const picked = new Map<DeclaredDep, ResolvedDep | undefined>();
+    for (const d of declaredByName.values()) picked.set(d, pickLockedEntry(d, parsed.value, module));
     for (const r of parsed.value) {
       const decl = declaredByName.get(module.normalizeName(r.name));
-      const direct = r.direct || decl !== undefined;
+      const pick = decl && picked.get(decl);
+      const direct = r.direct || (decl !== undefined && (pick === undefined || pick === r));
       candidates.push({
         name: r.name,
         version: r.version,
