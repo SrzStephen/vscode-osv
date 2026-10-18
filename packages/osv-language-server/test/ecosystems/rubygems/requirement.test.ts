@@ -27,6 +27,10 @@ describe("rewriteGemRequirements", () => {
     [["~> 1.4"], "2.0.0", ["~> 2.0"], true],
     [[">= 1.0", "< 2"], "3.0.0", [">= 3.0.0"], true],
     [[">= 1.0", "< 2"], "1.5.0", [">= 1.5.0", "< 2"], false],
+    [["> 1.0", "< 3"], "2.0", [">= 2.0", "< 3"], false],
+    [["< 2"], "3", [">= 3"], true],
+    [["!= 1.5"], "1.5", [">= 1.5"], true],
+    [["> 5"], "3", [">= 3"], true],
     [["~> 1.4"], "1.6.0.1", ["~> 1.6", ">= 1.6.0.1"], false],
   ])("%j + %s", (reqs, target, expected, widened) => {
     expect(rewriteGemRequirements(reqs, target)).toEqual({ reqs: expected, widened });

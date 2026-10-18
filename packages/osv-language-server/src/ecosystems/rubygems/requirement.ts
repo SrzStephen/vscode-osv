@@ -83,8 +83,9 @@ export function rewriteGemRequirements(reqs: string[], target: string): { reqs: 
         else widened = true;
         break;
       case ">":
-        if (cmp(target, c.version) > 0) out.push(raw);
-        else widened = true;
+        // A strict lower bound would still admit versions below the target.
+        if (cmp(target, c.version) <= 0) widened = true;
+        out.push(`>= ${target}`);
         break;
       case "!=":
         if (cmp(target, c.version) !== 0) out.push(raw);
@@ -92,6 +93,11 @@ export function rewriteGemRequirements(reqs: string[], target: string): { reqs: 
         break;
     }
   }
+  const bounded = out.some((raw) => {
+    const op = parseClause(raw)?.op;
+    return op === undefined || op === "=" || op === ">=" || op === "~>";
+  });
+  if (!bounded) out.push(`>= ${target}`);
   // Merge duplicate `>=` clauses into the highest, kept at the first one's position.
   const merged: string[] = [];
   let ge: { index: number; version: string } | undefined;
