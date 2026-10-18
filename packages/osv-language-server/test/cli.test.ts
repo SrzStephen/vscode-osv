@@ -54,6 +54,13 @@ describe("osv-check", () => {
     expect(r.stderr).toBe("");
   });
 
+  it("sends the osv-language-server/<version> User-Agent", async () => {
+    const fake = await fakeOsv();
+    await check(VULNERABLE, [], fake);
+    expect(fake.requests.length).toBeGreaterThan(0);
+    for (const r of fake.requests) expect(r.userAgent).toMatch(/^osv-language-server\/\d+\.\d+\.\d+/);
+  });
+
   it("reports a clean repo with exit 0", async () => {
     const r = await check(CLEAN, [], await fakeOsv());
     expect(r).toEqual({ code: 0, stdout: "No known vulnerabilities\n", stderr: "" });

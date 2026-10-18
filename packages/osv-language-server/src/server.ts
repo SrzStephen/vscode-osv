@@ -18,6 +18,7 @@ import { nodeFileSource, overlayFileSource, type FileSource } from "./core/fileS
 import { findOsvScannerToml, IgnoreMatcher, parseOsvScannerToml } from "./core/ignores.js";
 import { OsvClient } from "./core/osvClient.js";
 import { OsvService } from "./core/osvService.js";
+import { USER_AGENT } from "./core/userAgent.js";
 import { scanDocument, type ScanContext } from "./core/scanner.js";
 import { DEFAULT_SETTINGS, normalizeSettings, type Settings } from "./core/settings.js";
 import type { Finding } from "./core/types.js";
@@ -32,7 +33,6 @@ import { FindingStore } from "./features/store.js";
 export const COMMANDS = ["osv.update", "osv.afterUpdate", "osv.scanWorkspace", "osv.getFindings", "osv.clearCache", "osv.ignore"];
 
 const DEBOUNCE_MS = 750;
-const USER_AGENT = "osv-language-server";
 
 interface InitializationOptions {
   settings?: unknown;

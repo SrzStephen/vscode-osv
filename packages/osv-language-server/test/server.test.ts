@@ -70,6 +70,16 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
     expect(d[0]).toMatchObject({ source: "osv", code: GHSA });
   });
 
+  it("sends the osv-language-server/<version> User-Agent", async () => {
+    const fake = await startFakeOsv({ packages: { "npm|lodash|4.17.15": [GHSA] }, records: { [GHSA]: record } });
+    cleanups.push(() => fake.close());
+    const { server, uri, open } = await setup({ fake });
+    await open();
+    await server.diagnostics(uri);
+    expect(fake.requests.length).toBeGreaterThan(0);
+    for (const r of fake.requests) expect(r.userAgent).toMatch(/^osv-language-server\/\d+\.\d+\.\d+/);
+  });
+
   it("hover contains the update command link", async () => {
     const { server, uri, open } = await setup();
     await open();

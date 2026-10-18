@@ -8,6 +8,7 @@ import { nodeFileSource } from "./core/fileSource.js";
 import { findOsvScannerToml, IgnoreMatcher, parseOsvScannerToml } from "./core/ignores.js";
 import { OsvClient } from "./core/osvClient.js";
 import { OsvService } from "./core/osvService.js";
+import { USER_AGENT } from "./core/userAgent.js";
 import type { ScanContext } from "./core/scanner.js";
 import { DEFAULT_SETTINGS, type MinimumSeverity, type Settings } from "./core/settings.js";
 import type { Finding } from "./core/types.js";
@@ -43,7 +44,6 @@ const SEVERITY_LEVELS: readonly string[] = ["low", "medium", "high", "critical"]
 const FORMATS: readonly string[] = ["text", "json"];
 const OFFLINE_WARNING = "warning: osv.dev unreachable and no cached data; results incomplete\n";
 const INCOMPLETE_SUMMARY = "Results incomplete: no vulnerability data (OSV unreachable, no cache)\n";
-const USER_AGENT = "osv-check";
 
 /**
  * One line per finding plus a summary line. When the lookup was incomplete the summary says so, so it
