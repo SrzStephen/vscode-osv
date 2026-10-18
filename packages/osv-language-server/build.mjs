@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 const dir = fileURLToPath(new URL(".", import.meta.url));
 
 await build({
-  entryPoints: { server: `${dir}src/serverMain.ts` },
+  entryPoints: { server: `${dir}src/serverMain.ts`, cli: `${dir}src/cliMain.ts` },
   outdir: `${dir}dist`,
   bundle: true,
   platform: "node",
