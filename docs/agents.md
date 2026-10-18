@@ -75,7 +75,7 @@ interface OsvDiagnosticData {
   target?: string;        // recommended fixed version; absent when no fix exists
   vulnIds: string[];      // IDs of the vulnerabilities in the finding
   direct: boolean;        // true for a direct dependency
-  lockCommand?: string;   // command that refreshes the lockfile after applying the fix
+  lockCommand?: { cwd: string; command: string }; // command (run in cwd) that refreshes the lockfile after the fix
 }
 ```
 
@@ -98,11 +98,14 @@ The server advertises these commands in `executeCommandProvider`.
 (`osv.afterUpdate` is also advertised; it is an internal follow-up used by code actions and
 is not meant to be called directly.)
 
-Server-to-client notifications (both optional; clients that do not handle them ignore them):
+Server-to-client notifications (all optional; clients that do not handle them ignore them):
 
-- `osv/suggestLockCommand`: `{ cwd: string, command: string }`. The same command is in the
+- `osv/suggestLockCommand`: `{ cwd: string, command: string }`. The same object is in the
   diagnostic `data.lockCommand`.
 - `osv/addIgnore`: `{ id: string }`. Sent only to clients that set `clientHandlesIgnore`.
+- `osv/status`: `{ offline: boolean }`. Sent when the server's online state changes:
+  `offline: true` when OSV.dev could not be reached and results come from the cache (or are
+  missing), `offline: false` once a scan reaches OSV.dev again.
 
 For headless use (CI, scripts) prefer the CLI, see [pre-commit.md](pre-commit.md).
 
