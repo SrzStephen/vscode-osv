@@ -24,7 +24,11 @@
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Lock commands are disabled in Restricted Mode."
+      "description": "Lock commands are disabled in Restricted Mode.",
+      "restrictedConfigurations": [
+        "osv.apiBaseUrl",
+        "osv.offerLockCommand"
+      ]
     }
   },
   "activationEvents": [
