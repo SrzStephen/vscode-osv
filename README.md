@@ -11,7 +11,7 @@ This repository contains:
 | [`packages/vscode-osv`](packages/vscode-osv) | The VS Code extension (a thin client) |
 | [`packages/osv-language-server`](packages/osv-language-server) | The language server, plus the `osv-check` CLI for pre-commit hooks and CI |
 
-Phase 1 supports **npm** and **PyPI**.
+Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Maven and Gradle), **Go** and **C#** (NuGet).
 
 ## Features
 
@@ -38,6 +38,10 @@ Phase 1 supports **npm** and **PyPI**.
 |---|---|
 | npm | `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock` |
 | PyPI | `requirements*.txt`, `requirements/*.txt`, `pyproject.toml`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.lock`, `pylock.toml`, `pylock.*.toml` |
+| Rust (crates.io) | `Cargo.toml`, `Cargo.lock` |
+| Java/Kotlin (Maven) | `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile` |
+| Go | `go.mod` |
+| C# (NuGet) | `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config`, `packages.lock.json` |
 
 ## Privacy
 

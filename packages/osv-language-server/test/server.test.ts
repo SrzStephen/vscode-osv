@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { CodeAction, Hover, MarkupContent, TextDocumentEdit, TextEdit, WorkspaceEdit } from "vscode-languageserver";
 import { afterEach, describe, expect, it } from "vitest";
@@ -259,5 +259,72 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
     // The workspace scan read version 1; it must not mark the stored findings as current for version 2.
     await server.conn.sendRequest("workspace/executeCommand", { command: "osv.update", arguments: [{ uri, key }] });
     expect(server.appliedEdits).toEqual([]);
+  });
+});
+
+describe("language server: Phase 2 ecosystems", { timeout: 30_000 }, () => {
+  const rec = (id: string) => JSON.parse(readFileSync(join(__dirname, "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
+  const LOG4J = ["GHSA-jfh8-c2jp-5v3q", "GHSA-7rjr-3q55-vv33", "GHSA-p6xc-xr62-6r2g", "GHSA-8489-44mv-ggj8"];
+
+  async function open(files: Record<string, string>, openPath: string, key: string, ids: string[]) {
+    const rootDir = tmp("osv-ws-");
+    for (const [rel, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(rootDir, rel)), { recursive: true });
+      writeFileSync(join(rootDir, rel), text);
+    }
+    const fake = await startFakeOsv({ packages: { [key]: ids }, records: Object.fromEntries(ids.map((id) => [id, rec(id)])) });
+    cleanups.push(() => fake.close());
+    const server = await startTestServer({ osvUrl: fake.url, cacheDir: tmp("osv-cache-"), rootDir, clientHandlesIgnore: false });
+    cleanups.push(() => server.stop());
+    const uri = pathToFileURL(join(rootDir, openPath)).href;
+    await server.conn.sendNotification("textDocument/didOpen", { textDocument: { uri, languageId: "plaintext", version: 1, text: files[openPath]! } });
+    const diagnostics = await server.diagnostics(uri);
+    const [finding] = await findingsOf(server, uri);
+    const pos = finding!.range.start;
+    const actions = (await server.conn.sendRequest("textDocument/codeAction", {
+      textDocument: { uri },
+      range: { start: pos, end: pos },
+      context: { diagnostics: [] },
+    })) as CodeAction[];
+    return { rootDir, uri, diagnostics, actions };
+  }
+  const editsOf = (a: CodeAction) => (a.edit as WorkspaceEdit).changes!;
+
+  it("Cargo.toml: publishes diagnostics and offers the version edit", async () => {
+    const text = `[package]\nname = "demo"\nversion = "0.1.0"\n\n[dependencies]\nsmallvec = "0.6.9"\n`;
+    const r = await open({ "Cargo.toml": text }, "Cargo.toml", "crates.io|smallvec|0.6.9", ["GHSA-43w2-9j62-hq99", "GHSA-66p5-j55p-32r9"]);
+    expect(r.diagnostics[0]).toMatchObject({ source: "osv" });
+    expect(r.actions).toHaveLength(1);
+    expect(editsOf(r.actions[0]!)[r.uri]![0]!.newText).toBe("0.6.14");
+  });
+
+  it("pom.xml: a property-defined version edits the <properties> value", async () => {
+    const text = readFileSync(join(__dirname, "fixtures", "repos", "maven", "pom.xml"), "utf8");
+    const r = await open({ "pom.xml": text }, "pom.xml", "Maven|org.apache.logging.log4j:log4j-core|2.14.1", LOG4J);
+    expect(r.diagnostics.length).toBeGreaterThan(0);
+    expect(r.actions).toHaveLength(1);
+    const edit = editsOf(r.actions[0]!)[r.uri]![0]!;
+    expect(edit.newText).toBe("2.17.1");
+    // The edit lands on line 7 (`<log4j.version>2.14.1</log4j.version>`), not on the ${log4j.version} reference.
+    expect(edit.range.start.line).toBe(7);
+  });
+
+  it("go.mod: publishes diagnostics and offers the version edit", async () => {
+    const text = readFileSync(join(__dirname, "fixtures", "repos", "go", "go.mod"), "utf8");
+    const r = await open({ "go.mod": text }, "go.mod", "Go|golang.org/x/text|v0.3.5", ["GO-2021-0113", "GO-2022-1059"]);
+    expect(r.diagnostics.length).toBeGreaterThan(0);
+    expect(editsOf(r.actions[0]!)[r.uri]![0]!.newText).toBe("v0.3.8");
+  });
+
+  it("*.csproj with central package management: the edit targets Directory.Packages.props", async () => {
+    const props = `<Project>\n  <PropertyGroup>\n    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>\n  </PropertyGroup>\n  <ItemGroup>\n    <PackageVersion Include="Newtonsoft.Json" Version="12.0.3" />\n  </ItemGroup>\n</Project>\n`;
+    const csproj = `<Project Sdk="Microsoft.NET.Sdk">\n  <ItemGroup>\n    <PackageReference Include="Newtonsoft.Json" />\n  </ItemGroup>\n</Project>\n`;
+    const r = await open({ "Directory.Packages.props": props, "src/app/app.csproj": csproj }, "src/app/app.csproj", "NuGet|Newtonsoft.Json|12.0.3", ["GHSA-5crp-9r3c-p9vr"]);
+    expect(r.diagnostics.length).toBeGreaterThan(0);
+    expect(r.actions).toHaveLength(1);
+    const changes = editsOf(r.actions[0]!);
+    const propsUri = pathToFileURL(join(r.rootDir, "Directory.Packages.props")).href;
+    expect(Object.keys(changes)).toEqual([propsUri]);
+    expect(changes[propsUri]![0]!.newText).toBe("13.0.1");
   });
 });

@@ -1,7 +1,7 @@
 # Using the OSV language server from agents and other editors
 
 `osv-language-server` is a standard LSP server. Any LSP client can use it: Claude Code, Neovim,
-Helix, Zed, Emacs, and so on. It reads npm and PyPI manifests and lockfiles, queries
+Helix, Zed, Emacs, and so on. It reads npm, PyPI, Cargo, Maven/Gradle, Go and NuGet manifests and lockfiles, queries
 [OSV.dev](https://osv.dev) for each package name and version, and publishes the results as
 diagnostics.
 
@@ -17,10 +17,10 @@ npx --yes osv-language-server --stdio
 - Requires Node 20 or later. The server only reads workspace files and calls the OSV API; it
   never executes processes.
 
-Files handled (Phase 1): `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,
+Files handled: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,
 `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `requirements*.txt`, `requirements/*.txt`,
 `pyproject.toml`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.lock`,
-`pylock.toml` and `pylock.*.toml`. Documents the server does not recognise are ignored, so it is
+`pylock.toml`, `pylock.*.toml`, `Cargo.toml`, `Cargo.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile`, `go.mod`, `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config` and `packages.lock.json`. Documents the server does not recognise are ignored, so it is
 safe to attach it to every JSON, TOML, YAML or text buffer. Only `file:` URIs are scanned.
 
 The server has no language of its own: the client chooses which buffers to open with it (by
@@ -34,7 +34,7 @@ All fields are optional. Unknown keys are dropped and invalid values fall back t
 {
   "settings": {
     "enable": true,                      // master switch
-    "ecosystems": { "npm": true, "pypi": true }, // per-module booleans; unlisted = enabled
+    "ecosystems": { "npm": true, "pypi": true, "cargo": true, "maven": true, "go": true, "nuget": true }, // per-module booleans; unlisted = enabled
     "minimumSeverity": "low",            // "low" | "medium" | "high" | "critical"
     "scanLockfiles": true,               // report entries inside lockfiles
     "scanWorkspaceOnStartup": false,
@@ -128,7 +128,7 @@ osv-vulnerabilities/
 {
   "name": "osv-vulnerabilities",
   "version": "0.1.0",
-  "description": "OSV.dev vulnerability diagnostics for npm and PyPI manifests and lockfiles",
+  "description": "OSV.dev vulnerability diagnostics for npm, PyPI, Cargo, Maven/Gradle, Go and NuGet manifests and lockfiles",
   "lspServers": "./.lsp.json"
 }
 ```
@@ -146,7 +146,17 @@ go in `args`):
       ".toml": "toml",
       ".txt": "pip-requirements",
       ".lock": "lock",
-      ".yaml": "yaml"
+      ".yaml": "yaml",
+      ".xml": "xml",
+      ".gradle": "groovy",
+      ".kts": "kotlin",
+      ".mod": "gomod",
+      ".lockfile": "lock",
+      ".csproj": "xml",
+      ".fsproj": "xml",
+      ".vbproj": "xml",
+      ".props": "xml",
+      ".config": "xml"
     },
     "initializationOptions": {
       "settings": { "minimumSeverity": "medium" }
@@ -169,8 +179,8 @@ Neovim 0.11 or later (`vim.lsp.config`):
 ```lua
 vim.lsp.config('osv', {
   cmd = { 'npx', '--yes', 'osv-language-server', '--stdio' },
-  filetypes = { 'json', 'jsonc', 'toml', 'yaml', 'requirements', 'text' },
-  root_markers = { 'package.json', 'pyproject.toml', 'requirements.txt', 'Pipfile', '.git' },
+  filetypes = { 'json', 'jsonc', 'toml', 'yaml', 'requirements', 'text', 'xml', 'groovy', 'gradle', 'kotlin', 'gomod' },
+  root_markers = { 'package.json', 'pyproject.toml', 'requirements.txt', 'Pipfile', 'Cargo.toml', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'go.mod', 'Directory.Packages.props', '.git' },
   init_options = {
     settings = { minimumSeverity = 'medium' },
   },
@@ -188,8 +198,8 @@ if not configs.osv then
   configs.osv = {
     default_config = {
       cmd = { 'npx', '--yes', 'osv-language-server', '--stdio' },
-      filetypes = { 'json', 'jsonc', 'toml', 'yaml', 'requirements', 'text' },
-      root_dir = lspconfig.util.root_pattern('package.json', 'pyproject.toml', 'requirements.txt', 'Pipfile', '.git'),
+      filetypes = { 'json', 'jsonc', 'toml', 'yaml', 'requirements', 'text', 'xml', 'groovy', 'gradle', 'kotlin', 'gomod' },
+      root_dir = lspconfig.util.root_pattern('package.json', 'pyproject.toml', 'requirements.txt', 'Pipfile', 'Cargo.toml', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'go.mod', 'Directory.Packages.props', '.git'),
       init_options = { settings = { minimumSeverity = 'medium' } },
     },
   }

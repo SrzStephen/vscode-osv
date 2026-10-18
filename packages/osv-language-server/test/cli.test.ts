@@ -179,3 +179,26 @@ describe("osv-check", () => {
     expect(version.stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 });
+
+describe("osv-check Phase 2 ecosystems", () => {
+  const osvRecord = (id: string) => JSON.parse(readFileSync(join(__dirname, "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
+  const LOG4J = ["GHSA-jfh8-c2jp-5v3q", "GHSA-7rjr-3q55-vv33", "GHSA-p6xc-xr62-6r2g", "GHSA-8489-44mv-ggj8"];
+  const CASES: { repo: string; key: string; ids: string[]; line: RegExp }[] = [
+    { repo: "cargo", key: "crates.io|smallvec|0.6.9", ids: ["GHSA-43w2-9j62-hq99", "GHSA-66p5-j55p-32r9"], line: /Cargo\.toml:7:\d+ {2}\w+ {2}smallvec 0\.6\.9 → 0\.6\.14 {2}/ },
+    { repo: "maven", key: "Maven|org.apache.logging.log4j:log4j-core|2.14.1", ids: LOG4J, line: /pom\.xml:\d+:\d+ {2}\w+ {2}org\.apache\.logging\.log4j:log4j-core 2\.14\.1 → 2\.17\.1 {2}/ },
+    { repo: "gradle", key: "Maven|org.apache.logging.log4j:log4j-core|2.14.1", ids: LOG4J, line: /build\.gradle:6:\d+ {2}\w+ {2}org\.apache\.logging\.log4j:log4j-core 2\.14\.1 → 2\.17\.1 {2}/ },
+    { repo: "go", key: "Go|golang.org/x/text|v0.3.5", ids: ["GO-2021-0113", "GO-2022-1059"], line: /go\.mod:5:\d+ {2}\w+ {2}golang\.org\/x\/text v?0\.3\.5 → v?0\.3\.8 {2}/ },
+    { repo: "nuget", key: "NuGet|Newtonsoft.Json|12.0.3", ids: ["GHSA-5crp-9r3c-p9vr"], line: /app\.csproj:6:\d+ {2}\w+ {2}Newtonsoft\.Json 12\.0\.3 → 13\.0\.1 {2}/ },
+  ];
+
+  for (const c of CASES) {
+    it(`${c.repo}: reports the vulnerable dependency with exit 1`, async () => {
+      const fake = await startFakeOsv({ packages: { [c.key]: c.ids }, records: Object.fromEntries(c.ids.map((id) => [id, osvRecord(id)])) });
+      cleanups.push(() => fake.close());
+      const r = await check(join(REPOS, c.repo), [], fake);
+      expect(r.code).toBe(1);
+      expect(r.stdout).toMatch(c.line);
+      expect(r.stderr).toBe("");
+    });
+  }
+});

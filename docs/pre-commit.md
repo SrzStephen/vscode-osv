@@ -3,7 +3,7 @@
 `osv-check` is a command-line scanner that ships in the `osv-language-server` npm package
 (it installs two binaries: `osv-language-server` and `osv-check`). It uses the same engine as
 the VS Code extension and reports known vulnerabilities (from [OSV.dev](https://osv.dev)) in
-npm and PyPI manifests and lockfiles.
+npm, PyPI, Cargo, Maven/Gradle, Go and NuGet manifests and lockfiles.
 
 ```
 osv-check [paths...]
@@ -69,11 +69,11 @@ repos:
 ```
 
 The hook (`.pre-commit-hooks.yaml` in this repository) uses `language: node` and installs
-`osv-language-server` from npm. It runs only when a staged file matches one of the Phase 1
+`osv-language-server` from npm. It runs only when a staged file matches one of the supported
 manifest or lockfile names: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,
 `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `requirements*.txt`, `requirements/*.txt`,
 `pyproject.toml`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.lock`,
-`pylock.toml` and `pylock.*.toml`. The pattern will grow as more ecosystems are added.
+`pylock.toml`, `pylock.*.toml`, `Cargo.toml`, `Cargo.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile`, `go.mod`, `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config` and `packages.lock.json`. The `files:` regex is generated from the ecosystem modules (`npm run sync-patterns`), so it stays in step with them.
 
 This hook is exercised end to end by `scripts/test-precommit.sh`.
 
