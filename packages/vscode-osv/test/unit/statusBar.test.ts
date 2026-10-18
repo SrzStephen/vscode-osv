@@ -36,9 +36,11 @@ describe("isOsvFile", () => {
     "/w/pdm.lock",
     "/w/pylock.toml",
     "/w/pylock.dev.toml",
+    "/w/Cargo.toml",
+    "/w/Cargo.lock",
   ])("matches %s", (p) => expect(isOsvFile(p)).toBe(true));
 
-  it.each(["/w/tsconfig.json", "/w/notes.txt", "/w/other/base.txt", "/w/Cargo.toml", "/w/package.json.bak"])("rejects %s", (p) =>
+  it.each(["/w/tsconfig.json", "/w/notes.txt", "/w/other/base.txt","/w/package.json.bak"])("rejects %s", (p) =>
     expect(isOsvFile(p)).toBe(false),
   );
 });
