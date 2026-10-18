@@ -65,7 +65,7 @@ export function pickLockedEntry(dep: DeclaredDep, locked: ResolvedDep[] | undefi
   const entries = (locked ?? []).filter((r) => key(r.name) === name);
   const { rawSpec, lowerBound } = dep;
   const directs = entries.filter((r) => r.direct);
-  if (directs.length > 0 && lowerBound !== undefined) {
+  if (directs.length > 1 && lowerBound !== undefined) {
     // A crate declared on two majors has a direct entry per major: take the lowest that meets this declaration's bound.
     const cmp = (a: string, b: string) => module.versioning.compare(a, b);
     return directs.filter((r) => cmp(r.version, lowerBound) >= 0).sort((a, b) => cmp(a.version, b.version))[0];

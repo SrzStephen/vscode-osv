@@ -39,6 +39,10 @@ describe("lockfileResolver", () => {
     expect(resolveVersion(dep({ lowerBound: undefined }), [locked("4.0.0", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.0.0", fromLockfile: true, name: "lodash" });
   });
 
+  it("a single direct entry below the lower bound is still the locked version", () => {
+    expect(resolveVersion(dep({ rawSpec: "^4.0.0", lowerBound: "4.0.0" }), [locked("3.0.0", { direct: true })], npmModule)).toEqual({ version: "3.0.0", fromLockfile: true, name: "lodash" });
+  });
+
   it("falls through to the lower bound when rawSpec is undefined", () => {
     const d = dep({ rawSpec: undefined });
     expect(resolveVersion(d, [locked("3.0.0", { requestedSpecs: ["^3.0.0"] }), locked("4.0.0")], npmModule)).toEqual({ version: "4.17.0", fromLockfile: false, name: "lodash" });
