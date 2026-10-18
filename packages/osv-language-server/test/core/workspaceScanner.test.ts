@@ -1,0 +1,63 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { nodeFileSource } from "../../src/core/fileSource.js";
+import { IgnoreMatcher } from "../../src/core/ignores.js";
+import type { ScanContext } from "../../src/core/scanner.js";
+import { DEFAULT_SETTINGS } from "../../src/core/settings.js";
+import type { PackageQuery } from "../../src/core/types.js";
+import { ALL_MODULES } from "../../src/ecosystems/index.js";
+import { discoverFiles, scanFiles } from "../../src/core/workspaceScanner.js";
+
+let root: string;
+
+beforeEach(() => {
+  root = realpathSync(mkdtempSync(join(tmpdir(), "osv-ws-")));
+  mkdirSync(join(root, "node_modules", "x"), { recursive: true });
+  mkdirSync(join(root, "svc"));
+  writeFileSync(join(root, "package.json"), '{"dependencies":{"lodash":"4.17.15"}}');
+  writeFileSync(join(root, "node_modules", "x", "package.json"), '{"dependencies":{"evil":"1.0.0"}}');
+  writeFileSync(join(root, "svc", "requirements.txt"), "flask==2.0.0\nrequests==2.0.0\n");
+  writeFileSync(join(root, "README.md"), "# readme");
+});
+
+afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+describe("discoverFiles", () => {
+  it("returns only manifests and lockfiles, skipping node_modules", async () => {
+    const found = await discoverFiles(root, ALL_MODULES);
+    expect(found.sort()).toEqual([join(root, "package.json"), join(root, "svc", "requirements.txt")].sort());
+  });
+
+  it("skips directories matching exclude globs", async () => {
+    const found = await discoverFiles(root, ALL_MODULES, { exclude: ["svc"] });
+    expect(found).toEqual([join(root, "package.json")]);
+  });
+});
+
+describe("scanFiles", () => {
+  it("makes one lookup with deduplicated queries across files", async () => {
+    // Same package and version in a second npm manifest: it must be queried once.
+    writeFileSync(join(root, "svc", "package.json"), '{"dependencies":{"lodash":"4.17.15"}}');
+    const calls: PackageQuery[][] = [];
+    const ctx: ScanContext = {
+      files: nodeFileSource,
+      osv: {
+        lookup: async (queries: PackageQuery[]) => {
+          calls.push(queries);
+          return { results: new Map(), offline: true, skipped: [] };
+        },
+      },
+      settings: DEFAULT_SETTINGS,
+      ignores: new IgnoreMatcher([], [], new Date()),
+      rootDir: root,
+    };
+    const paths = await discoverFiles(root, ALL_MODULES);
+    expect(paths).toHaveLength(3);
+    const r = await scanFiles(paths, ctx);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.map((q) => `${q.ecosystem}|${q.name}`).sort()).toEqual(["PyPI|flask", "PyPI|requests", "npm|lodash"]);
+    expect(r).toEqual({ findings: [], offline: true });
+  });
+});

@@ -1,0 +1,53 @@
+import { promises as fs } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
+import picomatch from "picomatch";
+import { classifyFile } from "../ecosystems/index.js";
+import type { EcosystemModule } from "../ecosystems/types.js";
+import { queryKey } from "./osvService.js";
+import { prepareDocument, type PreparedScan, type ScanContext } from "./scanner.js";
+import type { Finding, PackageQuery } from "./types.js";
+
+const SKIPPED_DIRS = new Set(["node_modules", "target", "vendor", ".git", "dist", "build", ".venv", "venv", "__pycache__"]);
+
+/** Finds every manifest and lockfile under rootDir, as absolute paths. */
+export async function discoverFiles(rootDir: string, modules: EcosystemModule[], opts: { exclude?: string[] } = {}): Promise<string[]> {
+  const isExcluded = picomatch(opts.exclude ?? [], { dot: true });
+  const found: string[] = [];
+
+  async function walk(dir: string): Promise<void> {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      const rel = relative(rootDir, path).split(sep).join("/");
+      if (isExcluded(rel)) continue;
+      if (entry.isDirectory()) {
+        if (!SKIPPED_DIRS.has(entry.name)) await walk(path);
+      } else if (entry.isFile() && classifyFile(rel, modules)) {
+        found.push(path);
+      }
+    }
+  }
+
+  await walk(rootDir);
+  return found;
+}
+
+/** Scans many files with a single batched OSV lookup. */
+export async function scanFiles(paths: string[], ctx: ScanContext): Promise<{ findings: Finding[]; offline: boolean }> {
+  const prepared: PreparedScan[] = [];
+  for (const path of paths) {
+    const text = await ctx.files.read(path);
+    if (text === undefined) continue;
+    const scan = await prepareDocument(pathToFileURL(path).href, path, text, ctx);
+    if (scan && !("parseError" in scan)) prepared.push(scan);
+  }
+
+  const queries = new Map<string, PackageQuery>();
+  for (const scan of prepared) {
+    for (const q of scan.queries) queries.set(queryKey(q), q);
+  }
+  if (queries.size === 0) return { findings: [], offline: false };
+
+  const outcome = await ctx.osv.lookup([...queries.values()]);
+  return { findings: prepared.flatMap((scan) => scan.finalize(outcome.results)), offline: outcome.offline };
+}
