@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net6.0": {
+      "Newtonsoft.Json": {
+        "type": "Direct",
+        "requested": "[12.0.3, )",
+        "resolved": "12.0.3",
+        "contentHash": "abc"
+      },
+      "Serilog": {
+        "type": "Direct",
+        "requested": "[2.10.0, )",
+        "resolved": "2.10.0",
+        "contentHash": "def"
+      },
+      "Dapper.Extra": {
+        "type": "Transitive",
+        "resolved": "1.0.0",
+        "contentHash": "ghi",
+        "dependencies": {
+          "Newtonsoft.Json": "12.0.1"
+        }
+      }
+    },
+    "net8.0": {
+      "Newtonsoft.Json": {
+        "type": "Direct",
+        "requested": "[12.0.3, )",
+        "resolved": "12.0.3",
+        "contentHash": "abc"
+      },
+      "Serilog": {
+        "type": "Direct",
+        "requested": "[2.10.0, )",
+        "resolved": "2.10.0",
+        "contentHash": "def"
+      },
+      "MyLib": {
+        "type": "Project"
+      }
+    }
+  }
+}

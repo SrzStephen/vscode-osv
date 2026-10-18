@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <SerilogVersion>2.10.0</SerilogVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="newtonsoft.json" Version="12.0.3" />
+    <PackageReference Include="Dapper">
+      <Version>2.0.123</Version>
+    </PackageReference>
+    <PackageReference Include="Serilog" Version="$(SerilogVersion)" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="Missing.Prop" Version="$(NoSuchProp)" />
+  </ItemGroup>
+</Project>
