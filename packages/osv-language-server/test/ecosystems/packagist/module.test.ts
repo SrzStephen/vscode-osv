@@ -68,6 +68,11 @@ describe("packagistModule", () => {
     expect(packagistModule.transitiveFix({ name: "a/b;rm", current: "1", target: "2", lockfilePath: "/p/composer.lock" })).toBeUndefined();
   });
 
+  it("refuses names that would read as an option", () => {
+    expect(packagistModule.lockCommand({ manifestPath: "/p/composer.json", name: "--all", target: "1" })).toBeUndefined();
+    expect(packagistModule.transitiveFix({ name: "--all", current: "1", target: "2", lockfilePath: "/p/composer.lock" })).toBeUndefined();
+  });
+
   it("queries neither platform nor dev requirements, and locks guzzle at 7.4.4", async () => {
     const files = { "/ws/composer.json": read("packagist", "composer.json"), "/ws/composer.lock": read("packagist", "composer.lock") };
     const queried: PackageQuery[] = [];

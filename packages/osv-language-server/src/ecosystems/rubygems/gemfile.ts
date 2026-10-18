@@ -47,7 +47,25 @@ function skipSpace(text: string, i: number, end: number): number {
   return i;
 }
 
-const GIT_OPTION = /(?:^|[\s,(])(?:git|github):|:(?:git|github)\s*=>/;
+/** `text[from, end)` with each `#` comment outside a quoted literal replaced by a space. */
+function withoutComments(text: string, from: number, end: number): string {
+  let out = "";
+  let i = from;
+  while (i < end) {
+    const c = text[i]!;
+    if (c === "#") {
+      out += " ";
+      i = skipSpace(text, i, end);
+    } else {
+      const stop = Math.min(literalEnd(text, i) ?? i + 1, end);
+      out += text.slice(i, stop);
+      i = stop;
+    }
+  }
+  return out;
+}
+
+const GIT_OPTION =/(?:^|[\s,(])(?:git|github):|:(?:git|github)\s*=>/;
 const PATH_OPTION = /(?:^|[\s,(])path:|:path\s*=>/;
 const GROUP_OPTION = /(?:\bgroups?:|:groups?\s*=>)\s*\[?\s*:?["']?(\w+)/;
 
@@ -78,7 +96,7 @@ export function parseDeclaration(text: string, ix: LineIndex, pos: number, end: 
     i = stop;
   }
 
-  const options = text.slice(i, end);
+  const options = withoutComments(text, i, end);
   const dep: DeclaredDep = { name, nameRange, kind: "unresolved" };
   const group = GROUP_OPTION.exec(options)?.[1] ?? defaultGroup;
   if (group !== undefined) dep.group = group;

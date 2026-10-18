@@ -39,6 +39,21 @@ describe("parseGemfile", () => {
     expect(deps.map((d) => d.kind)).toEqual(["git", "git", "path", "git"]);
   });
 
+  it("a trailing comment does not read as a path option", () =>
+    expect(parseGemfile(`gem "a", "1.0" # path: ../a\n`)[0]).toMatchObject({ name: "a", kind: "registry", rawSpec: '"1.0"' }));
+
+  it("a trailing comment does not read as a git option", () =>
+    expect(parseGemfile(`gem "b", "~> 2.0" # was github: foo/b\n`)[0]).toMatchObject({ name: "b", kind: "registry", lowerBound: "2.0" }));
+
+  it("a trailing comment does not set the group", () => {
+    const [d] = parseGemfile(`gem "c", "1.0" # groups: [:test]\n`);
+    expect(d).toMatchObject({ name: "c", kind: "registry" });
+    expect(d!.group).toBeUndefined();
+  });
+
+  it("options after a commented continuation line still count", () =>
+    expect(parseGemfile(`gem "d", "1.0", # local copy\n  path: "../d"\n`)[0]).toMatchObject({ name: "d", kind: "path" }));
+
   it("group blocks and the group option", () => {
     const deps = parseGemfile(
       [

@@ -77,6 +77,9 @@ describe("rubygemsModule", () => {
   it("refuses shell-unsafe names", () =>
     expect(rubygemsModule.transitiveFix({ name: "a;b", current: "1", target: "2", lockfilePath: "/p/Gemfile.lock" })).toBeUndefined());
 
+  it("refuses names that would read as an option", () =>
+    expect(rubygemsModule.transitiveFix({ name: "--all", current: "1", target: "2", lockfilePath: "/p/Gemfile.lock" })).toBeUndefined());
+
   it("rack 2.2.3 with three real records -> 2.2.20", async () => {
     const files = { "/ws/Gemfile": "gem 'rack', '~> 2.2', '>= 2.2.3'\n" };
     const r = await scanDocument("file:///ws/Gemfile", "/ws/Gemfile", files["/ws/Gemfile"], ctx(files));

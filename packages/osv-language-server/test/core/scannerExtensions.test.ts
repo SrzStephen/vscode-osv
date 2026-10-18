@@ -129,6 +129,25 @@ describe("scanner contract extensions", () => {
     expect(res.findings[0]!.update?.edit).toEqual([{ uri: "file:///ws/deps.txt", range: r(5, 1, 6), newText: "2.0.0" }]);
   });
 
+  it("a throwing rewriteSpec is logged and keeps its finding without an update", async () => {
+    const mod = fakeModule({
+      rewriteSpec: (raw, target) => {
+        if (raw === "1.0.0") throw new TypeError("Invalid Version: 2.0.0.0");
+        return { spec: target, widened: false };
+      },
+    });
+    const logged: string[] = [];
+    const res = await scanDocument("file:///ws/deps.txt", "/ws/deps.txt", "foo 1.0.0\nbar 1.0.1\n", { ...ctx(mod, {}), log: (m) => logged.push(m) });
+    expect(res.findings.map((f) => [f.name, f.fix.target, f.update?.edit[0]?.newText])).toEqual([
+      ["foo", "2.0.0", undefined],
+      ["bar", "2.0.0", "2.0.0"],
+    ]);
+    expect(res.findings[0]).not.toHaveProperty("update");
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toContain("foo");
+    expect(logged[0]).toContain("Invalid Version: 2.0.0.0");
+  });
+
   it("passes current to transitiveFix", async () => {
     let got: string | undefined;
     const base = fakeModule();

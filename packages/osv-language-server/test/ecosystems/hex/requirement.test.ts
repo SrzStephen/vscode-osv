@@ -44,6 +44,9 @@ describe("rewriteHexRequirement", () => {
     ["~> 1.0 and >= 1.2.0", "1.2.9", "~> 1.2 and >= 1.2.9", false],
     ["~> 1.0 or ~> 2.0", "1.5.2", "~> 1.5 and >= 1.5.2", false],
     ["~> 1.0 or ~> 3.0", "2.0.0", "~> 2.0", true],
+    ["~> 1.0.0-rc.1", "1.16.6", "~> 1.16.6", true],
+    ["~> 1.0.0-rc.1", "1.0.5", "~> 1.0.5", false],
+    ["~> 1.3.0", "1.17.0-rc.1", "~> 1.17.0-rc.1", true],
   ])("%j + %s -> %j (widened %s)", (raw, target, spec, widened) => {
     expect(rewriteHexRequirement(raw, target)).toEqual({ spec, widened });
   });

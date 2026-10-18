@@ -68,6 +68,14 @@ describe("hexModule", () => {
     expect(f.update?.edit[0]?.newText).toBe("~> 1.16.6");
   });
 
+  it("plug ~> 1.3.0-rc.1 with the real record -> ~> 1.16.6", async () => {
+    const files = { "/ws/mix.exs": 'defmodule M do\n  defp deps do\n    [{:plug, "~> 1.3.0-rc.1"}]\n  end\nend\n' };
+    const r = await scanDocument("file:///ws/mix.exs", "/ws/mix.exs", files["/ws/mix.exs"], ctx(files));
+    expect(r.findings).toHaveLength(1);
+    expect(r.findings[0]).toMatchObject({ current: "1.3.0-rc.1", fix: { target: "1.16.6" }, update: { widened: true } });
+    expect(r.findings[0]!.update?.edit[0]?.newText).toBe("~> 1.16.6");
+  });
+
   it("queries the locked plug version from the fixture mix.lock", async () => {
     const files = { "/ws/mix.exs": read("hex", "mix.exs"), "/ws/mix.lock": read("hex", "mix.lock") };
     const queried: PackageQuery[] = [];

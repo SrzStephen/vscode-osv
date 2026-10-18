@@ -198,7 +198,15 @@ export async function prepareDocument(
         const vulns = mergeAliases(records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
         if (vulns.length === 0) continue;
         const fix = calculateFix(records, module.osvEcosystem, c.name, c.version, module.versioning, nameKeyOf(module));
-        const update = fix.target === undefined ? undefined : c.buildUpdate(fix.target);
+        let update: UpdatePlan | undefined;
+        if (fix.target !== undefined) {
+          try {
+            update = c.buildUpdate(fix.target);
+          } catch (e) {
+            // A rewrite bug must not hide the document's findings; this one is kept without an update.
+            (ctx.log ?? logToStderr)(`could not build the update for ${c.name} ${c.version} -> ${fix.target}: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
         const finding: Finding = {
           key: findingKey({ source: c.source, ecosystem: module.osvEcosystem, name: c.name, current: c.version, range: c.range }),
           uri,

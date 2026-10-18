@@ -6,7 +6,7 @@ import { parseComposerLock } from "./composerLock.js";
 import { rewriteComposerConstraint } from "./constraint.js";
 
 // Lock commands are sent to a terminal as text, so only shell-inert names are interpolated.
-const SAFE_NAME = /^[A-Za-z0-9_.\/-]+$/;
+const SAFE_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.\/-]*$/;
 const updateCommand = (name: string): string | undefined => (SAFE_NAME.test(name) ? `composer update ${name}` : undefined);
 
 export const packagistModule: EcosystemModule = {

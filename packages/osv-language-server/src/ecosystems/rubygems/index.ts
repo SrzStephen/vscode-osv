@@ -7,7 +7,7 @@ import { parseGemspec } from "./gemspec.js";
 import { rewriteGemRequirements } from "./requirement.js";
 
 // Lock commands are sent to a terminal as text, so only shell-inert names are interpolated.
-const SAFE_NAME = /^[A-Za-z0-9_.-]+$/;
+const SAFE_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/;
 const LITERAL = /(["'])((?:\\.|(?!\1).)*)\1/g;
 
 export const rubygemsModule: EcosystemModule = {

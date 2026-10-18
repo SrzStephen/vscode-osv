@@ -25,23 +25,32 @@ export function clausesLowerBound(reqs: string[], parse: ClauseParser, cmp: Vers
   return best;
 }
 
-function numericSegments(v: string): number[] {
-  return (v.match(/[0-9]+/g) ?? []).map(Number);
+/** The leading numeric release segments of `v`, and the prerelease/build text after them (`-rc.1`, `.beta1`). */
+function release(v: string): { segs: number[]; rest: string } {
+  const head = /^\d+(?:\.\d+)*/.exec(v)?.[0] ?? "";
+  return { segs: head === "" ? [] : head.split(".").map(Number), rest: v.slice(head.length) };
 }
 
-/** The first version `~> v` excludes: drop the last segment, then bump the one before it. */
+/** The first version `~> v` excludes: drop the last release segment, then bump the one before it. */
 function pessimisticUpper(v: string): string {
-  const segs = numericSegments(v);
+  const { segs } = release(v);
   if (segs.length <= 1) return String((segs[0] ?? 0) + 1);
   const head = segs.slice(0, -1);
   head[head.length - 1] = (head[head.length - 1] ?? 0) + 1;
   return head.join(".");
 }
 
-function truncate(target: string, n: number): string {
-  const segs = numericSegments(target).slice(0, n);
-  while (segs.length < n) segs.push(0);
-  return segs.join(".");
+/**
+ * `target` cut (or zero-padded) to `n` release segments. When that drops a prerelease and lands above
+ * the target, the prerelease is kept, or the target is used whole when its release has more segments.
+ */
+function truncate(target: string, n: number, cmp: VersionCompare): string {
+  const { segs, rest } = release(target);
+  const kept = segs.slice(0, n);
+  while (kept.length < n) kept.push(0);
+  const cut = kept.join(".");
+  if (cmp(cut, target) <= 0) return cut;
+  return segs.length <= n ? cut + rest : target;
 }
 
 const fmt = (c: Clause, version: string): string =>
@@ -69,9 +78,9 @@ export function rewriteClauses(reqs: string[], target: string, parse: ClausePars
         out.push(fmt(c, target));
         break;
       case "~>": {
-        const n = Math.max(numericSegments(c.version).length, 1);
+        const n = Math.max(release(c.version).segs.length, 1);
         if (cmp(target, pessimisticUpper(c.version)) >= 0) widened = true;
-        const truncated = truncate(target, n);
+        const truncated = truncate(target, n, cmp);
         out.push(fmt(c, truncated));
         if (cmp(truncated, target) !== 0) out.push(`>= ${target}`);
         break;
