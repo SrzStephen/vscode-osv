@@ -77,6 +77,8 @@
     "workspaceContains:**/action.yaml",
     "workspaceContains:**/pubspec.yaml",
     "workspaceContains:**/pubspec.lock",
+    "workspaceContains:**/mix.exs",
+    "workspaceContains:**/mix.lock",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"

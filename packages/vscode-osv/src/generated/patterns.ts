@@ -44,5 +44,7 @@ export const DOCUMENT_GLOBS: string[] = [
   "action.yml",
   "action.yaml",
   "pubspec.yaml",
-  "pubspec.lock"
+  "pubspec.lock",
+  "mix.exs",
+  "mix.lock"
 ];

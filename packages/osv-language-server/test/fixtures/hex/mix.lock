@@ -1,0 +1,10 @@
+%{
+  "cowboy": {:hex, :cowboy, "1.1.2", "0b1c2d3e4f5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0", [:rebar3], [{:cowlib, "~> 1.0.2", [hex: :cowlib, repo: "hexpm", optional: false]}, {:ranch, "~> 1.3.2", [hex: :ranch, repo: "hexpm", optional: false]}], "hexpm", "1f2e3d4c5b6a79880099aabbccddeeff00112233445566778899aabbccddeeff"},
+  "cowlib": {:hex, :cowlib, "1.0.2", "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809", [:make], [], "hexpm", "2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a"},
+  "mime": {:hex, :mime, "1.6.0", "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b", [:mix], [], "hexpm", "4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c"},
+  "my_git": {:git, "https://github.com/acme/my_git.git", "0123456789abcdef0123456789abcdef01234567", [tag: "v1.0"]},
+  "plug": {:hex, :plug, "1.3.0", "5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d", [:mix], [{:cowboy, "~> 1.0.3 or ~> 1.1", [hex: :cowboy, repo: "hexpm", optional: true]}, {:mime, "~> 1.0", [hex: :mime, repo: "hexpm", optional: false]}], "hexpm", "6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e"},
+  "ranch": {:hex, :ranch, "1.3.2", "708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f", [:rebar3], [], "hexpm", "8192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f70"},
+  "forked": {:hex, :real_name, "2.0.0", "92a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7081", [:mix], [], "hexpm", "a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192"},
+  "local": {:path, "../local", []},
+}
