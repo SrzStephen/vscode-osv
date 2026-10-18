@@ -26,6 +26,8 @@ export interface DeclaredDep {
   kind: DepKind;
   /** e.g. "devDependencies", "dev", "test". */
   group?: string;
+  /** Where the version text lives when it is not inline (a property in the same file, or another file). */
+  specLocation?: { path: string; range: TextRange; rawSpec: string };
 }
 
 /** A dependency resolved in a lockfile. */

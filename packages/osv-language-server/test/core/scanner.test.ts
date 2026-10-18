@@ -27,7 +27,7 @@ interface CtxOpts {
 
 function ctx(files: Record<string, string> = {}, opts: CtxOpts = {}): ScanContext {
   return {
-    files: { read: async (p) => files[p] },
+    files: { read: async (p) => files[p], list: async () => [] },
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();

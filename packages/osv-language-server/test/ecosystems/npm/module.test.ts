@@ -14,6 +14,7 @@ describe("npmModule", () => {
   it("pnpm override edit", () => {
     const plan = npmModule.transitiveFix({
       name: "qs",
+      current: "6.0.0",
       target: "6.10.3",
       lockfilePath: "/p/pnpm-lock.yaml",
       manifestUri: "file:///p/package.json",

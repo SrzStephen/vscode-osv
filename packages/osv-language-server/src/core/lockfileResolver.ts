@@ -29,17 +29,40 @@ export async function findLockfile(manifestPath: string, module: EcosystemModule
 
 /** Looks for the manifest beside a lockfile (same directory only). */
 export async function findManifestForLockfile(lockfilePath: string, module: EcosystemModule, files: FileSource): Promise<FoundFile | undefined> {
-  const name = module.manifestForLockfile(basename(lockfilePath));
-  if (name === undefined) return undefined;
-  const path = join(dirname(resolve(lockfilePath)), name);
-  const text = await files.read(path);
-  return text === undefined ? undefined : { path, text };
+  const dir = dirname(resolve(lockfilePath));
+  const base = basename(lockfilePath);
+  const names = module.manifestsForLockfile ? module.manifestsForLockfile(base) : [module.manifestForLockfile(base)];
+  for (const name of names) {
+    if (name === undefined) continue;
+    for (const candidate of await expandCandidate(name, dir, files)) {
+      const path = join(dir, candidate);
+      const text = await files.read(path);
+      if (text !== undefined) return { path, text };
+    }
+  }
+  return undefined;
+}
+
+/** A candidate with a single `*` expands to the sorted matching entries of dir; anything else is itself. */
+async function expandCandidate(name: string, dir: string, files: FileSource): Promise<string[]> {
+  const star = name.indexOf("*");
+  if (star < 0 || star !== name.lastIndexOf("*")) return [name];
+  const prefix = name.slice(0, star);
+  const suffix = name.slice(star + 1);
+  const entries = await files.list(dir);
+  return entries.filter((e) => e.length >= prefix.length + suffix.length && e.startsWith(prefix) && e.endsWith(suffix)).sort();
+}
+
+/** The module's matching key for names: nameKey when defined, else normalizeName. */
+export function nameKeyOf(module: EcosystemModule): (name: string) => string {
+  return (name) => (module.nameKey ? module.nameKey(name) : module.normalizeName(name));
 }
 
 /** The locked entry a declared dep resolves to, when it can be told apart from other copies. */
 export function pickLockedEntry(dep: DeclaredDep, locked: ResolvedDep[] | undefined, module: EcosystemModule): ResolvedDep | undefined {
-  const name = module.normalizeName(dep.name);
-  const entries = (locked ?? []).filter((r) => module.normalizeName(r.name) === name);
+  const key = nameKeyOf(module);
+  const name = key(dep.name);
+  const entries = (locked ?? []).filter((r) => key(r.name) === name);
   const { rawSpec } = dep;
   return (
     entries.find((r) => r.direct) ??
@@ -49,9 +72,9 @@ export function pickLockedEntry(dep: DeclaredDep, locked: ResolvedDep[] | undefi
 }
 
 /** The version to check for a declared dep: the locked one when determinable, else its lower bound. */
-export function resolveVersion(dep: DeclaredDep, locked: ResolvedDep[] | undefined, module: EcosystemModule): { version: string; fromLockfile: boolean } | undefined {
+export function resolveVersion(dep: DeclaredDep, locked: ResolvedDep[] | undefined, module: EcosystemModule): { version: string; fromLockfile: boolean; name: string } | undefined {
   if (dep.kind !== "registry") return undefined;
   const pick = pickLockedEntry(dep, locked, module);
-  if (pick) return { version: pick.version, fromLockfile: true };
-  return dep.lowerBound === undefined ? undefined : { version: dep.lowerBound, fromLockfile: false };
+  if (pick) return { version: pick.version, fromLockfile: true, name: pick.name };
+  return dep.lowerBound === undefined ? undefined : { version: dep.lowerBound, fromLockfile: false, name: dep.name };
 }

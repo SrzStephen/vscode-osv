@@ -31,7 +31,7 @@ describe("pypiModule", () => {
     ]));
 
   it("transitive fixes", () => {
-    const ctx = (l: string) => ({ name: "urllib3", target: "2.0.7", lockfilePath: `/p/${l}` });
+    const ctx = (l: string) => ({ name: "urllib3", current: "1.0.0", target: "2.0.7", lockfilePath: `/p/${l}` });
     expect(pypiModule.transitiveFix(ctx("poetry.lock"))).toEqual({
       kind: "command-only",
       edit: [],
@@ -47,7 +47,7 @@ describe("pypiModule", () => {
   });
 
   it("builds no lock command from a package name with shell metacharacters", () => {
-    const ctx = (name: string, l: string) => ({ name, target: "2.0.7", lockfilePath: `/p/${l}` });
+    const ctx = (name: string, l: string) => ({ name, current: "1.0.0", target: "2.0.7", lockfilePath: `/p/${l}` });
     expect(pypiModule.transitiveFix(ctx("urllib3$(touch pwned)", "poetry.lock"))).toBeUndefined();
     expect(pypiModule.transitiveFix(ctx("urllib3;rm -rf ~", "uv.lock"))).toBeUndefined();
     expect(pypiModule.transitiveFix(ctx("zope.interface", "uv.lock"))?.lockCommand).toEqual({

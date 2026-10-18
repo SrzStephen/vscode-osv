@@ -335,7 +335,7 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
   connection.onInitialized(
     guarded("startup", async () => {
       if (canWatchFiles) {
-        const globs = [...ALL_MODULES.flatMap((m) => m.lockfiles), "osv-scanner.toml"];
+        const globs = [...ALL_MODULES.flatMap((m) => [...m.lockfiles, ...(m.relatedFiles ?? [])]), "osv-scanner.toml"];
         await connection.client.register(DidChangeWatchedFilesNotification.type, {
           watchers: globs.map((g) => ({ globPattern: `**/${g}` })),
         });

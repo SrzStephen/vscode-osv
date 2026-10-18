@@ -35,11 +35,11 @@ describe("ignores", () => {
 
   it("finds the nearest osv-scanner.toml up to the root", async () => {
     const present = new Set(["/root/osv-scanner.toml", "/root/a/osv-scanner.toml"]);
-    const files: FileSource = { read: async (p) => (present.has(p) ? "" : undefined) };
+    const files: FileSource = { read: async (p) => (present.has(p) ? "" : undefined), list: async () => [] };
     expect(await findOsvScannerToml("/root/a/b/package.json", "/root", files)).toBe("/root/a/osv-scanner.toml");
     expect(await findOsvScannerToml("/root/c/package.json", "/root", files)).toBe("/root/osv-scanner.toml");
-    expect(await findOsvScannerToml("/root/c/package.json", "/root", { read: async () => undefined })).toBeUndefined();
-    const dotted: FileSource = { read: async (p) => (p === "/root/..foo/osv-scanner.toml" ? "" : undefined) };
+    expect(await findOsvScannerToml("/root/c/package.json", "/root", { read: async () => undefined, list: async () => [] })).toBeUndefined();
+    const dotted: FileSource = { read: async (p) => (p === "/root/..foo/osv-scanner.toml" ? "" : undefined), list: async () => [] };
     expect(await findOsvScannerToml("/root/..foo/package.json", "/root", dotted)).toBe("/root/..foo/osv-scanner.toml");
     expect(await findOsvScannerToml("/other/x.json", "/root", files)).toBeUndefined();
   });

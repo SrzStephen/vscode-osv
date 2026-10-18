@@ -4,6 +4,8 @@ import { promises as fs } from "node:fs";
 export interface FileSource {
   /** Resolves undefined when the path does not exist or is a directory. */
   read(path: string): Promise<string | undefined>;
+  /** Entry names (not paths) in a directory; empty when it cannot be read. */
+  list(dir: string): Promise<string[]>;
 }
 
 /** Open-document text wins over disk, so unsaved edits are what gets analyzed. */
@@ -12,6 +14,7 @@ export function overlayFileSource(open: (path: string) => string | undefined, ba
     async read(path) {
       return open(path) ?? base.read(path);
     },
+    list: (dir) => base.list(dir),
   };
 }
 
@@ -25,6 +28,13 @@ export const nodeFileSource: FileSource = {
       const code = (e as NodeJS.ErrnoException).code;
       if (code === "ENOENT" || code === "EISDIR") return undefined;
       throw e;
+    }
+  },
+  async list(dir) {
+    try {
+      return await fs.readdir(dir);
+    } catch {
+      return [];
     }
   },
 };
