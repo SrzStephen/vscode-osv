@@ -11,8 +11,10 @@ const SEVERITY: Record<Severity, DiagnosticSeverity> = {
   unknown: DiagnosticSeverity.Information,
 };
 
+/** The advisory page; the ID is percent-encoded (including "()!*'") so it cannot end a markdown link. */
 export function vulnerabilityUrl(id: string): string {
-  return `https://osv.dev/vulnerability/${id}`;
+  const encoded = encodeURIComponent(id).replace(/[()!*']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `https://osv.dev/vulnerability/${encoded}`;
 }
 
 function describeIds(ids: string[]): string {

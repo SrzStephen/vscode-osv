@@ -43,6 +43,18 @@ describe("renderHover", () => {
     expect(md.match(/\]\(command:/g)).toHaveLength(2);
   });
 
+  it("escapes ids and targets and URL-encodes the id in links", () => {
+    const id = "GHSA-x](javascript:alert(1))\n- [y](command:osv.update?1)";
+    const fix = { target: "2.0.0**](command:osv.ignore?1)", crossesMajor: false, fixesAll: true };
+    const md = renderHover(finding({ vulns: [{ ...vuln("GHSA-aaaa-bbbb-cccc"), id }], fix }));
+    // Only the two command links the hover itself builds (update, ignore) may remain, and none to javascript:.
+    expect(md.match(/\]\(command:/g)).toHaveLength(2);
+    expect(md).not.toContain("](javascript:");
+    expect(md.split("\n").filter((l) => l.startsWith("- "))).toHaveLength(1);
+    expect(md).toContain("[GHSA-x\\]\\(javascript:alert\\(1\\)\\) - \\[y\\]\\(command:osv.update?1\\)](https://osv.dev/vulnerability/GHSA-x%5D%28javascript%3Aalert%281%29%29%0A-%20%5By%5D%28command%3Aosv.update%3F1%29)");
+    expect(md).toContain("Suggested: **2.0.0\\*\\*\\]\\(command:osv.ignore?1\\)**");
+  });
+
   it("does not print 'undefined' in the update title without a target", () => {
     const md = renderHover(finding({ fix: { target: undefined, crossesMajor: false, fixesAll: false } }));
     expect(md).not.toContain("undefined");

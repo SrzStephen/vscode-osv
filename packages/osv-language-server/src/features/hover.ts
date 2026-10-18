@@ -10,6 +10,15 @@ export function escapeMarkdown(s: string): string {
   return s.replace(/\s+/g, " ").replace(MARKDOWN_SPECIAL, "\\$&");
 }
 
+// Characters that matter mid-line (emphasis, code, links, HTML, tables); "-", "." and "#" only matter
+// at the start of a line, which collapsing whitespace already rules out, so IDs and versions stay readable.
+const INLINE_SPECIAL = /[\\`*_[\]()<>|!~]/g;
+
+/** Escapes an ID or version for inline markdown (link text, bold), the way summaries are made safe. */
+function escapeInline(s: string): string {
+  return s.replace(/\s+/g, " ").replace(INLINE_SPECIAL, "\\$&");
+}
+
 function commandLink(title: string, command: string, args: unknown): string {
   return `[${title}](command:${command}?${encodeURIComponent(JSON.stringify([args]))})`;
 }
@@ -20,11 +29,12 @@ export function renderHover(f: Finding): string {
   const n = f.vulns.length;
   const lines: string[] = [`**${f.name} ${f.current}** — ${n} known vulnerabilit${n === 1 ? "y" : "ies"}`, ""];
   for (const v of f.vulns) {
-    lines.push(`- ${ICON[v.severity]} [${v.id}](${vulnerabilityUrl(v.id)}) ${capitalize(v.severity)} — ${escapeMarkdown(v.summary)}`);
+    lines.push(`- ${ICON[v.severity]} [${escapeInline(v.id)}](${vulnerabilityUrl(v.id)}) ${capitalize(v.severity)} — ${escapeMarkdown(v.summary)}`);
   }
   lines.push("");
-  if (f.fix.target === undefined) lines.push("⚠ No fixed version available");
-  else lines.push(`Suggested: **${f.fix.target}** (${f.fix.fixesAll ? "fixes all" : "does not fix all"} ${n})`);
+  const target = f.fix.target === undefined ? undefined : escapeInline(f.fix.target);
+  if (target === undefined) lines.push("⚠ No fixed version available");
+  else lines.push(`Suggested: **${target}** (${f.fix.fixesAll ? "fixes all" : "does not fix all"} ${n})`);
   if (f.fix.crossesMajor) lines.push("", "⚠ Major version upgrade");
   if (f.update?.widened) lines.push("", "⚠ Upper bound widened");
   if (f.checkedLowerBound) lines.push("", "ℹ Checked lower bound — no lockfile found");
@@ -34,11 +44,11 @@ export function renderHover(f: Finding): string {
   const links: string[] = [];
   if (f.update) {
     const title = f.update.kind === "override" ? "Override" : "Update";
-    links.push(commandLink(f.fix.target === undefined ? title : `${title} to ${f.fix.target}`,"osv.update", { uri: f.uri, findingKey: f.key }));
+    links.push(commandLink(target === undefined ? title : `${title} to ${target}`, "osv.update", { uri: f.uri, findingKey: f.key }));
   }
   if (top) {
     links.push(`[View on osv.dev](${vulnerabilityUrl(top.id)})`);
-    links.push(commandLink(`Ignore ${top.id}`, "osv.ignore", { id: top.id }));
+    links.push(commandLink(`Ignore ${escapeInline(top.id)}`, "osv.ignore", { id: top.id }));
   }
   if (links.length) lines.push("", links.join(" | "));
   return lines.join("\n");
