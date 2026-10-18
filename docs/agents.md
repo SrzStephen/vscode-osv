@@ -61,7 +61,8 @@ Diagnostics are pushed with `textDocument/publishDiagnostics`.
 - `severity`: critical/high are Error, medium is Warning, low/unknown are Information.
 - `message` is self-sufficient for agents that only read diagnostics, for example:
   `lodash 4.17.15 has 3 known vulnerabilities (GHSA-p6mc-m468-83gw, GHSA-29mw-wpgm-hmr9, CVE-2020-28500); upgrade to 4.17.21 (fixes all)`.
-  Variants and suffixes: `; no fixed version available`, `(fixes all)` / `(does not fix all)`,
+  Variants and suffixes: `; no fixed version available`,
+  `; version could not be parsed, no fix calculated`, `(fixes all)` / `(does not fix all)`,
   `(transitive, via a → b)`, `(major version upgrade)`,
   `(checked lower bound — no lockfile found)`, `(cached)`.
 - `data`:

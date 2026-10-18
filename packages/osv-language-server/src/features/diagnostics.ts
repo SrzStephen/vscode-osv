@@ -24,7 +24,8 @@ function buildMessage(f: Finding): string {
   const n = f.vulns.length;
   const ids = describeIds(f.vulns.map((v) => v.id));
   let message = `${f.name} ${f.current} has ${n} known vulnerabilit${n === 1 ? "y" : "ies"} (${ids})`;
-  if (f.fix.target === undefined) message += "; no fixed version available";
+  if (f.fix.reason === "unparseable-version") message += "; version could not be parsed, no fix calculated";
+  else if (f.fix.target === undefined) message += "; no fixed version available";
   else message += `; upgrade to ${f.fix.target} (${f.fix.fixesAll ? "fixes all" : "does not fix all"})`;
   if (!f.direct) message += f.via?.length ? ` (transitive, via ${f.via.join(" → ")})` : " (transitive)";
   if (f.fix.crossesMajor) message += " (major version upgrade)";

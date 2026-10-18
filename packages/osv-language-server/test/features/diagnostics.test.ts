@@ -35,6 +35,12 @@ describe("toDiagnostic", () => {
     expect(d.message).toBe("qs 1.0.0 has 1 known vulnerability (GHSA-aaaa-bbbb-cccc); no fixed version available");
   });
 
+  it("says the version could not be parsed instead of 'no fixed version'", () => {
+    const fix = { target: undefined, crossesMajor: false, fixesAll: false, reason: "unparseable-version" as const };
+    const d = toDiagnostic(finding({ current: "1.0-weird", fix, update: undefined }));
+    expect(d.message).toBe("qs 1.0-weird has 1 known vulnerability (GHSA-aaaa-bbbb-cccc); version could not be parsed, no fix calculated");
+  });
+
   it("appends suffixes in order, with bare transitive when no path is known", () => {
     const d = toDiagnostic(finding({ direct: false, checkedLowerBound: true, cached: true, fix: { target: "2.0.0", crossesMajor: true, fixesAll: true } }));
     expect(d.message).toBe(
