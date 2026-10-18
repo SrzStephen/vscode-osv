@@ -32,8 +32,11 @@ describe("lockfileResolver", () => {
     expect(await findLockfile("/ws2/package.json", npmModule, "/ws", files)).toBeUndefined();
   });
 
-  it("with several direct entries the first in lockfile order wins", () => {
-    expect(resolveVersion(dep(), [locked("4.0.0", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.0.0", fromLockfile: true, name: "lodash" });
+  it("with several direct entries the lowest meeting the lower bound wins", () => {
+    expect(resolveVersion(dep(), [locked("4.0.0", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.17.21", fromLockfile: true, name: "lodash" });
+    expect(resolveVersion(dep(), [locked("4.17.30", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.17.21", fromLockfile: true, name: "lodash" });
+    expect(resolveVersion(dep(), [locked("4.0.0", { direct: true }), locked("3.0.0", { direct: true })], npmModule)).toEqual({ version: "4.17.0", fromLockfile: false, name: "lodash" });
+    expect(resolveVersion(dep({ lowerBound: undefined }), [locked("4.0.0", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.0.0", fromLockfile: true, name: "lodash" });
   });
 
   it("falls through to the lower bound when rawSpec is undefined", () => {

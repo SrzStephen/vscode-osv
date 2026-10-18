@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cargoModule } from "../../../src/ecosystems/cargo/index.js";
 import { classifyFile } from "../../../src/ecosystems/index.js";
+import { resolveVersion } from "../../../src/core/lockfileResolver.js";
 
 describe("cargoModule", () => {
   it("builds the cargo update --precise command", () =>
@@ -23,5 +24,36 @@ describe("cargoModule", () => {
   it("classifies workspace member manifests and lockfiles", () => {
     expect(classifyFile("crates/a/Cargo.toml")?.module.id).toBe("cargo");
     expect(classifyFile("Cargo.lock")).toMatchObject({ role: "lockfile" });
+  });
+
+  it("checks each declaration of a crate on two majors at its own locked version", () => {
+    const manifest = ["[package]", 'name = "app"', 'version = "0.1.0"', "", "[dependencies]", 'rand07 = { package = "rand", version = "0.7" }', 'rand = "0.8"', ""].join("\n");
+    const lock = [
+      "version = 4",
+      "",
+      "[[package]]",
+      'name = "app"',
+      'version = "0.1.0"',
+      'dependencies = ["rand 0.7.3", "rand 0.8.5"]',
+      "",
+      "[[package]]",
+      'name = "rand"',
+      'version = "0.7.3"',
+      'source = "registry+https://github.com/rust-lang/crates.io-index"',
+      "",
+      "[[package]]",
+      'name = "rand"',
+      'version = "0.8.5"',
+      'source = "registry+https://github.com/rust-lang/crates.io-index"',
+      "",
+    ].join("\n");
+    const deps = cargoModule.parseManifest(manifest, "Cargo.toml");
+    const locked = cargoModule.parseLockfile(lock, "Cargo.lock");
+    expect(locked.filter((r) => r.direct).map((r) => r.version)).toEqual(["0.7.3", "0.8.5"]);
+    const checked = deps.map((d) => ({ lowerBound: d.lowerBound, resolved: resolveVersion(d, locked, cargoModule) }));
+    expect(checked).toEqual([
+      { lowerBound: "0.7.0", resolved: { version: "0.7.3", fromLockfile: true, name: "rand" } },
+      { lowerBound: "0.8.0", resolved: { version: "0.8.5", fromLockfile: true, name: "rand" } },
+    ]);
   });
 });
