@@ -18,6 +18,12 @@ describe("parsePoetryLock", () => {
     expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false });
   });
 
+  it("derives via from [package.dependencies], leaving direct false", () => {
+    expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false, via: ["requests"] });
+    expect(deps.find((d) => d.name === "requests")!.via).toBeUndefined();
+    expect(deps.some((d) => d.direct)).toBe(false);
+  });
+
   it("keeps every version of a repeated name", () => {
     const t = '[[package]]\nname = "a"\nversion = "1"\n\n[[package]]\nname = "a"\nversion = "2"\n';
     expect(parsePoetryLock(t).map((d) => d.version)).toEqual(["1", "2"]);

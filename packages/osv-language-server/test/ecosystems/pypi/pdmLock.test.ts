@@ -18,6 +18,19 @@ describe("parsePdmLock", () => {
     expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false });
   });
 
+  it("derives via from dependencies strings, leaving direct false", () => {
+    expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false, via: ["requests"] });
+    expect(deps.some((d) => d.direct)).toBe(false);
+  });
+
+  it("reads names out of requirement strings with extras and markers", () => {
+    const t = [
+      '[[package]]\nname = "a"\nversion = "1"\ndependencies = ["B_c[x]>=1; python_version < \'3.10\'"]\n',
+      '[[package]]\nname = "b-c"\nversion = "2"\n',
+    ].join("\n");
+    expect(parsePdmLock(t).find((d) => d.name === "b-c")!.via).toEqual(["a"]);
+  });
+
   it("throws ParseError on truncated input", () => {
     expect(() => parsePdmLock(text.slice(0, text.indexOf('name = "requests"') + 40))).toThrow(ParseError);
   });

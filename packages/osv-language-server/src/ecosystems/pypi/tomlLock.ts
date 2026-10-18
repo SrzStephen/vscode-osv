@@ -48,14 +48,29 @@ export function lockPackages(text: string, arrayKey: string): LockPackage[] {
   return packages;
 }
 
-/** Entries of a lockfile whose packages must all carry a version (Poetry, PDM). */
-export function versionedEntries(packages: LockPackage[], text: string): LockEntry[] {
+/**
+ * Resolves a lockfile that records no direct deps (Poetry, PDM), where every package carries a version.
+ * `depNames` lists the raw names a package depends on. Entries nothing depends on serve as roots for
+ * `via`, but none is reported direct: the scanner marks those from the manifest.
+ */
+export function resolveUnrooted(
+  packages: LockPackage[],
+  text: string,
+  depNames: (pkg: LockPackage) => string[],
+): ResolvedDep[] {
   const ix = new LineIndex(text);
-  return packages.map((p) => {
+  const byName = new Map<string, LockEntry[]>();
+  const entries = packages.map((p) => {
     if (p.version === undefined) throw new ParseError(`Package ${p.name} has no version`);
     const name = normalizePypiName(p.name);
-    return { id: `${name}@${p.version}`, name, version: p.version, range: ix.range(...p.versionAt!), edges: [] };
+    const entry: LockEntry = { id: `${name}@${p.version}`, name, version: p.version, range: ix.range(...p.versionAt!), edges: [] };
+    byName.set(name, [...(byName.get(name) ?? []), entry]);
+    return entry;
   });
+  entries.forEach((entry, i) => {
+    entry.edges = depNames(packages[i]!).flatMap((n) => (byName.get(normalizePypiName(n)) ?? []).map((e) => e.id));
+  });
+  return resolveEntries(entries).map((d) => ({ ...d, direct: false }));
 }
 
 interface Ref {
@@ -83,8 +98,8 @@ function refsOf(table: TOMLTable | undefined, key?: string): Ref[] {
 
 /**
  * Resolves a uv.lock or pylock.toml. `isRoot` picks the project's own packages: their dependencies
- * are the direct ones and they are not reported themselves. Without a root, entries nothing depends
- * on count as direct. Packages without a version (roots, VCS sources) have no entry of their own.
+ * are the direct ones and they are not reported themselves. Without a root nothing is direct.
+ * Packages without a version (roots, VCS sources) have no entry of their own.
  */
 export function resolveGraph(
   packages: LockPackage[],
@@ -118,7 +133,7 @@ export function resolveGraph(
       ...refsOf(r.sub.get("dev-dependencies")),
     ]),
   );
-  return resolveEntries(entries, roots.length > 0 ? direct : undefined);
+  return resolveEntries(entries, roots.length > 0 ? direct : []);
 }
 
 /** The entries of an inline-table value such as uv's `source` or pylock's `directory`. */

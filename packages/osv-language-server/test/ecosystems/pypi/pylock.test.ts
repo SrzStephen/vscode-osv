@@ -5,13 +5,14 @@ import { read } from "../../helpers/pypiFixture.js";
 import { textAt } from "../../helpers/textAt.js";
 
 describe("parsePylock", () => {
-  it("parses a uv export, where every package is direct as no edges are recorded", () => {
+  it("parses a uv export, where nothing is direct as there is no root package", () => {
     const text = read("pylock.toml");
     const deps = parsePylock(text);
     const requests = deps.find((d) => d.name === "requests")!;
-    expect(requests).toMatchObject({ version: "2.25.0", direct: true });
+    expect(requests).toMatchObject({ version: "2.25.0", direct: false });
     expect(textAt(text, requests.range)).toBe("2.25.0");
-    expect(deps.find((d) => d.name === "urllib3")).toBeDefined();
+    expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false });
+    expect(deps.some((d) => d.direct)).toBe(false);
   });
 
   it("takes direct deps from the editable package and derives via", () => {
