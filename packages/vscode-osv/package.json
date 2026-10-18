@@ -71,6 +71,10 @@
     "workspaceContains:**/gems.locked",
     "workspaceContains:**/composer.json",
     "workspaceContains:**/composer.lock",
+    "workspaceContains:**/.github/workflows/*.yml",
+    "workspaceContains:**/.github/workflows/*.yaml",
+    "workspaceContains:**/action.yml",
+    "workspaceContains:**/action.yaml",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"

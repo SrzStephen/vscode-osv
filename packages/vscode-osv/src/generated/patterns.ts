@@ -38,5 +38,9 @@ export const DOCUMENT_GLOBS: string[] = [
   "Gemfile.lock",
   "gems.locked",
   "composer.json",
-  "composer.lock"
+  "composer.lock",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "action.yml",
+  "action.yaml"
 ];
