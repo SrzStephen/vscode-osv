@@ -109,6 +109,16 @@ describe("scanner contract extensions", () => {
     expect(await findManifestForLockfile("/ws/packages.lock.json", mod, source)).toEqual({ path: "/ws/a.csproj", text: "A" });
   });
 
+  it("lockfile findings also edit specLocation after resolveExternal", async () => {
+    const mod = fakeModule({
+      resolveExternal: async (deps) =>
+        deps.map((d) => ({ ...d, rawSpec: "1.0.0", lowerBound: "1.0.0", specLocation: { path: "/ws/versions.txt", range: r(3, 4, 9), rawSpec: "1.0.0" } })),
+    });
+    const res = await scanDocument("file:///ws/deps.lock", "/ws/deps.lock", "foo 1.0.0\n", ctx(mod, { "/ws/deps.txt": "foo\n" }));
+    expect(res.findings).toHaveLength(1);
+    expect(res.findings[0]!.update?.edit).toEqual([{ uri: "file:///ws/versions.txt", range: r(3, 4, 9), newText: "2.0.0" }]);
+  });
+
   it("passes current to transitiveFix", async () => {
     let got: string | undefined;
     const base = fakeModule();

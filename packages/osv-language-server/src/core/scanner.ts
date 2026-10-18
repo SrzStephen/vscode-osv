@@ -122,7 +122,11 @@ export async function prepareDocument(
     let declared: DeclaredDep[] | undefined;
     if (manifestFile) {
       const m = parseOrThrow(() => module.parseManifest(manifestFile.text, basename(manifestFile.path)));
-      if (m.ok) declared = m.value;
+      if (m.ok) {
+        declared = module.resolveExternal
+          ? await module.resolveExternal(m.value, { manifestPath: manifestFile.path, rootDir: ctx.rootDir, files: ctx.files })
+          : m.value;
+      }
     }
     const manifestUri = manifestFile ? siblingUri(uri, manifestFile.path) : undefined;
     const key = nameKeyOf(module);
