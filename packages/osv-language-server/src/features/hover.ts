@@ -7,7 +7,7 @@ const ICON: Record<Severity, string> = { critical: "🔴", high: "🟠", medium:
 const MARKDOWN_SPECIAL = /[\\`*_{}[\]()#+\-.!|<>]/g;
 
 export function escapeMarkdown(s: string): string {
-  return s.replace(MARKDOWN_SPECIAL, "\\$&");
+  return s.replace(/\s+/g, " ").replace(MARKDOWN_SPECIAL, "\\$&");
 }
 
 function commandLink(title: string, command: string, args: unknown): string {
@@ -34,7 +34,7 @@ export function renderHover(f: Finding): string {
   const links: string[] = [];
   if (f.update) {
     const title = f.update.kind === "override" ? "Override" : "Update";
-    links.push(commandLink(`${title} to ${f.fix.target}`, "osv.update", { uri: f.uri, findingKey: f.key }));
+    links.push(commandLink(f.fix.target === undefined ? title : `${title} to ${f.fix.target}`,"osv.update", { uri: f.uri, findingKey: f.key }));
   }
   if (top) {
     links.push(`[View on osv.dev](${vulnerabilityUrl(top.id)})`);

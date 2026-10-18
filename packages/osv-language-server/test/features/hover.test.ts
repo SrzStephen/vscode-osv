@@ -33,6 +33,22 @@ describe("renderHover", () => {
     expect(md).toMatch(/command:osv\.update\?%5B%7B/);
   });
 
+  it("collapses newlines in summaries so they cannot start a new markdown line", () => {
+    const evil = "bad\n- [x](command:osv.ignore?%5B%5D)\r\n\r\n[y](command:osv.update?1)";
+    const md = renderHover(finding({ vulns: [{ ...vuln("GHSA-aaaa-bbbb-cccc"), summary: evil }] }));
+    const rows = md.split("\n").filter((l) => l.startsWith("- "));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toContain("bad \\- \\[x\\]\\(command:osv\\.ignore");
+    expect(md.split("\n").some((l) => /^\s*\[?x\]?\(/.test(l) || l.startsWith("[y]"))).toBe(false);
+    expect(md.match(/\]\(command:/g)).toHaveLength(2);
+  });
+
+  it("does not print 'undefined' in the update title without a target", () => {
+    const md = renderHover(finding({ fix: { target: undefined, crossesMajor: false, fixesAll: false } }));
+    expect(md).not.toContain("undefined");
+    expect(md).toContain("[Update](command:osv.update?");
+  });
+
   it("no update link without a plan", () => {
     const md = renderHover(finding({ update: undefined, fix: { target: undefined, crossesMajor: false, fixesAll: false } }));
     expect(md).not.toContain("command:osv.update");
