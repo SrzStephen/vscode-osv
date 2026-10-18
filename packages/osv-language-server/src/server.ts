@@ -187,22 +187,29 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
     const versionsAtStart = new Map(documents.all().map((d) => [d.uri, d.version]));
     for (const root of roots) {
       const paths = await discoverFiles(root, ALL_MODULES, { onError: (path, message) => connection.console.warn(`workspace scan: skipped ${path}: ${message}`) });
-      // Ignores come from the root's osv-scanner.toml; the lookup starts from a file directly in the root.
-      const ctx = await contextFor(join(root, "osv-scanner.toml"), root, override ? { minimumSeverity: override } : {});
-      const result = await scanFiles(paths, ctx);
-      anyOffline ||= result.offline;
-      all.push(...result.findings);
-      if (!record) continue;
+      // Each file is governed by its nearest osv-scanner.toml (as for open documents), so files are scanned in one batch per toml.
+      const byToml = new Map<string | undefined, string[]>();
       for (const path of paths) {
-        const uri = pathToFileURL(path).href;
-        if (result.parseErrors.some((p) => p.path === path)) continue;
-        const findings = result.findings.filter((f) => f.uri === uri);
-        const doc = documents.get(uri);
-        if (doc && doc.version !== versionsAtStart.get(uri)) continue;
-        workspaceUris.add(uri);
-        store.set(uri, findings);
-        if (doc) scannedVersion.set(uri, doc.version);
-        publish(uri, findings);
+        const toml = await findOsvScannerToml(path, root, files);
+        byToml.set(toml, [...(byToml.get(toml) ?? []), path]);
+      }
+      for (const group of byToml.values()) {
+        const ctx = await contextFor(group[0]!, root, override ? { minimumSeverity: override } : {});
+        const result = await scanFiles(group, ctx);
+        anyOffline ||= result.offline;
+        all.push(...result.findings);
+        if (!record) continue;
+        for (const path of group) {
+          const uri = pathToFileURL(path).href;
+          if (result.parseErrors.some((p) => p.path === path)) continue;
+          const findings = result.findings.filter((f) => f.uri === uri);
+          const doc = documents.get(uri);
+          if (doc && doc.version !== versionsAtStart.get(uri)) continue;
+          workspaceUris.add(uri);
+          store.set(uri, findings);
+          if (doc) scannedVersion.set(uri, doc.version);
+          publish(uri, findings);
+        }
       }
     }
     setOffline(anyOffline);

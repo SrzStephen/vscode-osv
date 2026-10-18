@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -134,6 +134,15 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
     await sleep(1200);
     expect(await server.diagnostics(uri)).toEqual(before);
     expect((await findingsOf(server, uri)).length).toBeGreaterThan(0);
+  });
+
+  it("osv.scanWorkspace applies each file's nearest osv-scanner.toml", async () => {
+    const { server, uri, rootDir } = await setup({ lockfile: false });
+    mkdirSync(join(rootDir, "sub"));
+    writeFileSync(join(rootDir, "sub", "package.json"), PACKAGE_JSON);
+    writeFileSync(join(rootDir, "sub", "osv-scanner.toml"), `[[IgnoredVulns]]\nid = "${GHSA}"\n`);
+    const found = (await server.conn.sendRequest("workspace/executeCommand", { command: "osv.scanWorkspace", arguments: [{}] })) as Finding[];
+    expect(found.map((f) => f.uri)).toEqual([uri]);
   });
 
   it("osv.scanWorkspace returns findings for unopened files", async () => {
