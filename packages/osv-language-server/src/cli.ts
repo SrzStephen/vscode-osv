@@ -46,8 +46,8 @@ const INCOMPLETE_SUMMARY = "Results incomplete: no vulnerability data (OSV unrea
 const USER_AGENT = "osv-check";
 
 /**
- * One line per finding plus a summary line. With no findings the summary is "No known vulnerabilities",
- * unless the lookup was incomplete, where a clean summary would be a false pass.
+ * One line per finding plus a summary line. When the lookup was incomplete the summary says so, so it
+ * never implies a complete result (a clean one would be a false pass).
  */
 export function formatText(findings: Finding[], cwd: string, incomplete = false): string {
   if (findings.length === 0) return incomplete ? INCOMPLETE_SUMMARY : "No known vulnerabilities\n";
@@ -59,7 +59,8 @@ export function formatText(findings: Finding[], cwd: string, incomplete = false)
     return `${where}  ${f.severity}  ${f.name} ${f.current} → ${f.fix.target ?? "no fix"}  ${first?.id ?? ""}${more}${f.cached ? " (cached)" : ""}`;
   });
   const files = new Set(findings.map((f) => f.uri)).size;
-  return `${lines.join("\n")}\n${findings.length} vulnerable dependencies in ${files} files\n`;
+  const summary = incomplete ? INCOMPLETE_SUMMARY : `${findings.length} vulnerable dependencies in ${files} files\n`;
+  return `${lines.join("\n")}\n${summary}`;
 }
 
 /** Explicit paths, made absolute against cwd; those that are not manifests or lockfiles under cwd are dropped. */

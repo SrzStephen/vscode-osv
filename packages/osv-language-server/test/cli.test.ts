@@ -118,6 +118,22 @@ describe("osv-check", () => {
     expect(r.stderr).toBe("");
   });
 
+  it("ends with the incomplete line when offline with only part of the data cached", async () => {
+    const root = tmp("osv-cli-repo-");
+    writeFileSync(join(root, "package.json"), JSON.stringify({ dependencies: { lodash: "4.17.15", "left-pad": "1.3.0" } }, null, 2));
+    const cacheDir = tmp("osv-cli-cache-");
+    const cache = new DiskCache(cacheDir);
+    const stale = new Date(Date.now() - 100 * 3600_000).toISOString();
+    await cache.putPackage({ ecosystem: "npm", name: "lodash", version: "4.17.15" }, { fetchedAt: stale, vulnIds: IDS.map((id) => ({ id, modified: records[id]!.modified })) });
+    for (const id of IDS) await cache.putVuln(records[id]!);
+    const r = await check(root, [], await fakeOsv({ closed: true }), cacheDir);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain("lodash 4.17.15 → 4.17.21  GHSA-35jh-r3h4-6jhm, +2 more (cached)\n");
+    expect(r.stdout.endsWith("Results incomplete: no vulnerability data (OSV unreachable, no cache)\n")).toBe(true);
+    expect(r.stdout).not.toContain("vulnerable dependencies");
+    expect(r.stderr).toBe("warning: osv.dev unreachable and no cached data; results incomplete\n");
+  });
+
   it("serves a second run from the shared cache without contacting OSV", async () => {
     const cacheDir = tmp("osv-cli-cache-");
     expect((await check(VULNERABLE, [], await fakeOsv(), cacheDir)).code).toBe(1);
