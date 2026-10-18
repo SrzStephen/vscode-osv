@@ -2,6 +2,14 @@
   "name": "osv-language-server",
   "version": "0.1.0",
   "private": true,
+  "keywords": [
+    "osv",
+    "vulnerability",
+    "lockfile",
+    "npm",
+    "pypi",
+    "language-server"
+  ],
   "engines": {
     "node": ">=20"
   },

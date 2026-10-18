@@ -13,6 +13,13 @@
     "Linters",
     "Other"
   ],
+  "keywords": [
+    "osv",
+    "vulnerability",
+    "security",
+    "dependencies",
+    "lockfile"
+  ],
   "main": "./dist/extension.js",
   "capabilities": {
     "untrustedWorkspaces": {
