@@ -40,3 +40,17 @@ export function classifyFile(
   }
   return undefined;
 }
+
+/** Every file glob the tool reacts to (manifests, lockfiles, related files), deduplicated, in module order. */
+export function allFileGlobs(modules: EcosystemModule[] = ALL_MODULES): string[] {
+  return [...new Set(modules.flatMap((m) => [...m.manifests, ...m.lockfiles, ...(m.relatedFiles ?? [])]))];
+}
+
+function globToRegex(glob: string): string {
+  return glob.replace(/[.+^${}()|[\]\\?]/g, "\\$&").replace(/\*/g, "[^/]*");
+}
+
+/** Anchored regex source for pre-commit's `files:`; each glob matches at any directory depth. */
+export function preCommitFilesRegex(modules: EcosystemModule[] = ALL_MODULES): string {
+  return `(^|/)(${allFileGlobs(modules).map(globToRegex).join("|")})$`;
+}

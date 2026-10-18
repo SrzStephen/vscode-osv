@@ -12,7 +12,9 @@
     "release:prepare": "node scripts/release-prepare.mjs",
     "typecheck": "tsc -p packages/osv-language-server --noEmit && tsc -p packages/vscode-osv --noEmit",
     "lint": "eslint .",
-    "build": "npm run build --workspaces"
+    "build": "npm run build --workspaces",
+    "sync-patterns": "node --import tsx scripts/sync-patterns.mjs",
+    "check-patterns": "node --import tsx scripts/sync-patterns.mjs --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,33 +1,16 @@
-import { basename, dirname } from "node:path";
+import { DOCUMENT_GLOBS } from "./generated/patterns.js";
 
-const BASENAMES = [
-  "package.json",
-  "package-lock.json",
-  "npm-shrinkwrap.json",
-  "yarn.lock",
-  "pnpm-lock.yaml",
-  "bun.lock",
-  "pyproject.toml",
-  "Pipfile",
-  "Pipfile.lock",
-  "poetry.lock",
-  "uv.lock",
-  "pdm.lock",
-  "pylock.toml",
-];
+/** Glob for the client's documentSelector; generated from the server's ecosystem modules (npm run sync-patterns). */
+export const DOCUMENT_GLOB = `**/{${DOCUMENT_GLOBS.join(",")}}`;
 
-/** Glob for the client's documentSelector; mirrors the server's Phase-1 manifest and lockfile patterns. */
-export const DOCUMENT_GLOB = `**/{${[...BASENAMES, "requirements*.txt", "requirements/*.txt", "pylock.*.toml"].join(",")}}`;
+const MATCHERS = DOCUMENT_GLOBS.map(
+  (g) => new RegExp(`(^|/)${g.replace(/[.+^${}()|[\]\\?]/g, "\\$&").replace(/\*/g, "[^/]*")}$`),
+);
 
 /** Whether the path is one of the files the server scans (same rules as DOCUMENT_GLOB). */
 export function isOsvFile(path: string): boolean {
-  const name = basename(path);
-  return (
-    BASENAMES.includes(name) ||
-    /^requirements.*\.txt$/.test(name) ||
-    /^pylock\..+\.toml$/.test(name) ||
-    (name.endsWith(".txt") && basename(dirname(path)) === "requirements")
-  );
+  const normalized = path.replace(/\\/g, "/");
+  return MATCHERS.some((re) => re.test(normalized));
 }
 
 export interface StatusState {
