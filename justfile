@@ -54,7 +54,9 @@ vscode fixture="vulnerable": build
     set -euo pipefail
     src="packages/osv-language-server/test/fixtures/repos/{{fixture}}"
     [ -d "$src" ] || { echo "No fixture named '{{fixture}}' under packages/osv-language-server/test/fixtures/repos" >&2; exit 1; }
-    dir="$(mktemp -d)"
+    root="${TMPDIR:-/tmp}/vs-code-osv-scratch"
+    mkdir -p "$root"
+    dir="$(mktemp -d "$root/{{fixture}}.XXXXXX")"
     cp -r "$src/." "$dir"
     code --new-window --extensionDevelopmentPath="$PWD/packages/vscode-osv" "$dir"
     echo "Opened $dir with the extension loaded from $PWD/packages/vscode-osv"
@@ -85,6 +87,7 @@ scan *paths=".": build
 release-prepare version:
     node scripts/release-prepare.mjs {{version}}
 
-# Remove build output and packaged VSIX files
+# Remove build output, packaged VSIX files, and scratch fixture copies from `just vscode`
 clean:
     rm -rf packages/osv-language-server/dist packages/vscode-osv/dist packages/vscode-osv/*.vsix
+    rm -rf "${TMPDIR:-/tmp}/vs-code-osv-scratch"
