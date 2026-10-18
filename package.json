@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:canary": "vitest run --config vitest.canary.config.ts",
+    "release:prepare": "node scripts/release-prepare.mjs",
     "typecheck": "tsc -p packages/osv-language-server --noEmit && tsc -p packages/vscode-osv --noEmit",
     "lint": "eslint .",
     "build": "npm run build --workspaces"

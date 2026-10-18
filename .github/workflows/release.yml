@@ -1,0 +1,64 @@
+name: Release
+
+# Runs only when a version tag is pushed. Prepare the release first with
+# `npm run release:prepare -- X.Y.Z` (see CONTRIBUTING.md).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: xvfb-run -a npm run test:integration -w vscode-osv
+      - name: Pre-commit hook end-to-end test
+        run: |
+          pip install pre-commit
+          scripts/test-precommit.sh
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub release and attach the VSIX
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Package VSIX
+        run: npm run package -w vscode-osv
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --packagePath packages/vscode-osv/*.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Publish to Open VSX
+        run: npx ovsx publish packages/vscode-osv/*.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      - name: Publish osv-language-server to npm
+        run: npm publish -w osv-language-server --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub release with VSIX
+        run: gh release create "$GITHUB_REF_NAME" packages/vscode-osv/*.vsix --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

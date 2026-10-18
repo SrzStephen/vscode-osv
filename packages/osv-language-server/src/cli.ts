@@ -1,4 +1,4 @@
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import pkg from "../package.json";

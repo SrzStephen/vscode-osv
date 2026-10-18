@@ -9,6 +9,9 @@
     "osv-language-server": "dist/server.js",
     "osv-check": "dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node build.mjs"
   },
