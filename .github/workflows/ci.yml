@@ -32,6 +32,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Package VSIX (packaging smoke check)
+        working-directory: packages/vscode-osv
+        run: npx vsce package --no-dependencies -o "${{ runner.temp }}/vscode-osv.vsix"
       - name: Integration tests (Linux, headless)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run test:integration -w vscode-osv

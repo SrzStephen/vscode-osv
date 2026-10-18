@@ -11,9 +11,7 @@ manifests and lockfiles, with one-click fixes.
 - Status bar: `OSV: N vulnerable`, `OSV: ✓` or `OSV: offline`; click to open the Problems panel.
 - Works offline from a disk cache.
 
-<!-- TODO(release): replace with real recordings before publishing (Task 25 checklist). -->
-![Inline diagnostics and hover](media/diagnostics.gif)
-![One-click fix](media/quick-fix.gif)
+<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
 
 ## Privacy
 
@@ -43,6 +41,8 @@ in the workspace root is also honoured.
 
 ## More
 
-Pre-commit hooks, CI and other editors: see the
-[repository README](../../README.md), [pre-commit docs](../../docs/pre-commit.md) and
-[agent docs](../../docs/agents.md).
+Pre-commit hooks, CI and other editors: see `README.md`, `docs/pre-commit.md` and
+`docs/agents.md` in the source repository.
+
+<!-- TODO: link these once the repository URL is set (relative links break vsce packaging). -->
+

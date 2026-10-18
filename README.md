@@ -30,9 +30,7 @@ Phase 1 supports **npm** and **PyPI**.
 - **Pre-commit and CI**: the `osv-check` command, see [docs/pre-commit.md](docs/pre-commit.md).
 - **Any editor or AI agent** that speaks LSP: see [docs/agents.md](docs/agents.md).
 
-<!-- TODO(release): replace with real recordings before publishing (Task 25 checklist). -->
-![Inline diagnostics and hover](media/diagnostics.gif)
-![One-click fix](media/quick-fix.gif)
+<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
 
 ### Supported files
 
