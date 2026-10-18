@@ -43,6 +43,7 @@ function stringItem(s: string, followedByDigit: boolean): string {
 function normalizeList(list: Item[]): void {
   for (let i = list.length - 1; i >= 0; i--) {
     const last = list[i];
+    if (last === undefined) continue;
     if (isNull(last)) list.splice(i, 1);
     else if (!Array.isArray(last)) break;
   }
