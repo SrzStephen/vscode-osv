@@ -350,7 +350,10 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
       const dirs = new Set<string>();
       for (const change of params.changes) {
         const path = filePath(change.uri);
-        if (path !== undefined) dirs.add(dirname(path));
+        if (path === undefined) continue;
+        dirs.add(dirname(path));
+        // A version catalog serves the build files of the project above its gradle/ directory.
+        if (path.split(sep).join("/").endsWith("/gradle/libs.versions.toml")) dirs.add(dirname(dirname(path)));
       }
       await Promise.all([...dirs].map((dir) => rescanOpenDocuments(dir)));
     }),

@@ -309,6 +309,39 @@ describe("language server: Phase 2 ecosystems", { timeout: 30_000 }, () => {
     expect(edit.range.start.line).toBe(7);
   });
 
+  it("a gradle/libs.versions.toml change rescans open build files in the parent tree", async () => {
+    const rootDir = tmp("osv-ws-");
+    const catalog = (v: string) => `[libraries]\nlog4j-core = "org.apache.logging.log4j:log4j-core:${v}"\n`;
+    const build = `dependencies {\n    implementation(libs.log4j.core)\n}\n`;
+    mkdirSync(join(rootDir, "gradle"));
+    mkdirSync(join(rootDir, "app"));
+    writeFileSync(join(rootDir, "gradle", "libs.versions.toml"), catalog("2.17.1"));
+    writeFileSync(join(rootDir, "build.gradle.kts"), build);
+    writeFileSync(join(rootDir, "app", "build.gradle.kts"), build);
+    const fake = await startFakeOsv({ packages: { "Maven|org.apache.logging.log4j:log4j-core|2.14.1": LOG4J }, records: Object.fromEntries(LOG4J.map((id) => [id, rec(id)])) });
+    cleanups.push(() => fake.close());
+    const server = await startTestServer({ osvUrl: fake.url, cacheDir: tmp("osv-cache-"), rootDir, clientHandlesIgnore: false });
+    cleanups.push(() => server.stop());
+    const uris = ["build.gradle.kts", join("app", "build.gradle.kts")].map((p) => pathToFileURL(join(rootDir, p)).href);
+    for (const uri of uris) {
+      await server.conn.sendNotification("textDocument/didOpen", { textDocument: { uri, languageId: "plaintext", version: 1, text: build } });
+      expect(await server.diagnostics(uri)).toEqual([]);
+    }
+
+    writeFileSync(join(rootDir, "gradle", "libs.versions.toml"), catalog("2.14.1"));
+    await server.conn.sendNotification("workspace/didChangeWatchedFiles", {
+      changes: [{ uri: pathToFileURL(join(rootDir, "gradle", "libs.versions.toml")).href, type: 2 }],
+    });
+    for (const uri of uris) {
+      let diagnostics = await server.diagnostics(uri);
+      for (let i = 0; i < 50 && diagnostics.length === 0; i++) {
+        await sleep(100);
+        diagnostics = await server.diagnostics(uri);
+      }
+      expect(diagnostics.length, uri).toBeGreaterThan(0);
+    }
+  });
+
   it("go.mod: publishes diagnostics and offers the version edit", async () => {
     const text = readFileSync(join(__dirname, "fixtures", "repos", "go", "go.mod"), "utf8");
     const r = await open({ "go.mod": text }, "go.mod", "Go|golang.org/x/text|v0.3.5", ["GO-2021-0113", "GO-2022-1059"]);
