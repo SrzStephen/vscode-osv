@@ -1,0 +1,227 @@
+import { basename, dirname, isAbsolute, relative, sep } from "node:path";
+import { ALL_MODULES, classifyFile } from "../ecosystems/index.js";
+import { ParseError, type EcosystemModule } from "../ecosystems/types.js";
+import { mergeAliases } from "./aliases.js";
+import type { FileSource } from "./fileSource.js";
+import { calculateFix } from "./fixCalculator.js";
+import { findingKey } from "./findingKey.js";
+import type { IgnoreMatcher } from "./ignores.js";
+import { findLockfile, findManifestForLockfile, resolveVersion } from "./lockfileResolver.js";
+import type { OsvService } from "./osvService.js";
+import { queryKey } from "./osvService.js";
+import { isEcosystemEnabled, type Settings } from "./settings.js";
+import { maxSeverity, severityRank } from "./severity.js";
+import type { DeclaredDep, Finding, OsvRecord, PackageQuery, ResolvedDep, Severity, TextRange, UpdatePlan, Vuln } from "./types.js";
+
+export interface ScanContext {
+  files: FileSource;
+  osv: { lookup: OsvService["lookup"] };
+  settings: Settings;
+  ignores: IgnoreMatcher;
+  rootDir: string;
+  modules?: EcosystemModule[];
+}
+
+type LookupResults = Map<string, { records: OsvRecord[]; cached: boolean }>;
+
+export interface PreparedScan {
+  queries: PackageQuery[];
+  finalize(results: LookupResults): Finding[];
+}
+
+export interface ScanResult {
+  findings: Finding[];
+  offline: boolean;
+  parseError: boolean;
+}
+
+/** A dependency to check, plus what is needed to build its finding once records arrive. */
+interface Candidate {
+  name: string;
+  version: string;
+  range: TextRange;
+  source: "manifest" | "lockfile";
+  direct: boolean;
+  checkedLowerBound: boolean;
+  via?: string[] | undefined;
+  buildUpdate(target: string): UpdatePlan | undefined;
+}
+
+const MIN_RANK: Record<Settings["minimumSeverity"], number> = { low: 1, medium: 2, high: 3, critical: 4 };
+
+function parseOrThrow<T>(fn: () => T): { ok: true; value: T } | { ok: false } {
+  try {
+    return { ok: true, value: fn() };
+  } catch (e) {
+    if (e instanceof ParseError) return { ok: false };
+    throw e;
+  }
+}
+
+function hasNodeModulesSegment(path: string): boolean {
+  return path.split(/[\\/]/).includes("node_modules");
+}
+
+function siblingUri(uri: string, path: string): string {
+  return uri.slice(0, uri.lastIndexOf("/") + 1) + encodeURIComponent(basename(path));
+}
+
+export async function prepareDocument(
+  uri: string,
+  path: string,
+  text: string,
+  ctx: ScanContext,
+): Promise<PreparedScan | { parseError: true } | undefined> {
+  const { settings } = ctx;
+  if (!settings.enable) return undefined;
+  if (hasNodeModulesSegment(path)) return undefined;
+  const rel = relative(ctx.rootDir, path);
+  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined;
+  const hit = classifyFile(rel.split(sep).join("/"), ctx.modules ?? ALL_MODULES);
+  if (!hit) return undefined;
+  const { module, role } = hit;
+  if (!isEcosystemEnabled(settings, module.id)) return undefined;
+  if (role === "lockfile" && !settings.scanLockfiles) return undefined;
+
+  const candidates: Candidate[] = [];
+  const fileName = basename(path);
+
+  if (role === "manifest") {
+    const parsed = parseOrThrow(() => module.parseManifest(text, fileName));
+    if (!parsed.ok) return { parseError: true };
+    const lockFile = await findLockfile(path, module, ctx.rootDir, ctx.files);
+    let locked: ResolvedDep[] | undefined;
+    if (lockFile) {
+      const l = parseOrThrow(() => module.parseLockfile(lockFile.text, basename(lockFile.path)));
+      if (l.ok) locked = l.value;
+    }
+    const lockfilePath = locked ? lockFile?.path : undefined;
+    for (const dep of parsed.value) {
+      const resolved = resolveVersion(dep, locked, module);
+      if (!resolved) continue;
+      candidates.push({
+        name: dep.name,
+        version: resolved.version,
+        range: dep.specRange ?? dep.nameRange,
+        source: "manifest",
+        direct: true,
+        checkedLowerBound: !resolved.fromLockfile,
+        buildUpdate: (target) => directUpdate(module, dep, uri, path, lockfilePath, target),
+      });
+    }
+  } else {
+    const parsed = parseOrThrow(() => module.parseLockfile(text, fileName));
+    if (!parsed.ok) return { parseError: true };
+    const manifestFile = await findManifestForLockfile(path, module, ctx.files);
+    let declared: DeclaredDep[] | undefined;
+    if (manifestFile) {
+      const m = parseOrThrow(() => module.parseManifest(manifestFile.text, basename(manifestFile.path)));
+      if (m.ok) declared = m.value;
+    }
+    const manifestUri = manifestFile ? siblingUri(uri, manifestFile.path) : undefined;
+    const declaredByName = new Map((declared ?? []).map((d) => [module.normalizeName(d.name), d]));
+    for (const r of parsed.value) {
+      const decl = declaredByName.get(module.normalizeName(r.name));
+      const direct = r.direct || decl !== undefined;
+      candidates.push({
+        name: r.name,
+        version: r.version,
+        range: r.range,
+        source: "lockfile",
+        direct,
+        checkedLowerBound: false,
+        via: direct ? undefined : r.via,
+        buildUpdate: (target) => {
+          if (direct) {
+            if (!decl || !manifestFile || !manifestUri) return undefined;
+            return directUpdate(module, decl, manifestUri, manifestFile.path, path, target);
+          }
+          return module.transitiveFix({
+            name: r.name,
+            target,
+            lockfilePath: path,
+            ...(manifestFile && manifestUri ? { manifestPath: manifestFile.path, manifestUri, manifestText: manifestFile.text } : {}),
+          });
+        },
+      });
+    }
+  }
+
+  const queries = new Map<string, PackageQuery>();
+  for (const c of candidates) {
+    const q = { ecosystem: module.osvEcosystem, name: c.name, version: c.version };
+    queries.set(queryKey(q), q);
+  }
+
+  return {
+    queries: [...queries.values()],
+    finalize(results) {
+      const findings: Finding[] = [];
+      for (const c of candidates) {
+        const found = results.get(queryKey({ ecosystem: module.osvEcosystem, name: c.name, version: c.version }));
+        if (!found || found.records.length === 0) continue;
+        const vulns = mergeAliases(found.records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
+        if (vulns.length === 0) continue;
+        const fix = calculateFix(found.records, module.osvEcosystem, c.name, c.version, module.versioning, module.normalizeName);
+        const update = fix.target === undefined ? undefined : c.buildUpdate(fix.target);
+        const finding: Finding = {
+          key: findingKey({ source: c.source, ecosystem: module.osvEcosystem, name: c.name, current: c.version, range: c.range }),
+          uri,
+          range: c.range,
+          ecosystem: module.osvEcosystem,
+          name: c.name,
+          current: c.version,
+          checkedLowerBound: c.checkedLowerBound,
+          source: c.source,
+          direct: c.direct,
+          ...(c.via ? { via: c.via } : {}),
+          vulns,
+          severity: maxSeverity(vulns.map((v): Severity => v.severity)),
+          fix,
+          ...(update ? { update } : {}),
+          cached: found.cached,
+        };
+        findings.push(finding);
+      }
+      return findings;
+    },
+  };
+
+  function directUpdate(
+    mod: EcosystemModule,
+    dep: DeclaredDep,
+    manifestUri: string,
+    manifestPath: string,
+    lockfilePath: string | undefined,
+    target: string,
+  ): UpdatePlan {
+    const edit: UpdatePlan["edit"] = [];
+    let widened: boolean | undefined;
+    if (dep.specRange && dep.rawSpec !== undefined) {
+      const rewritten = mod.rewriteSpec(dep.rawSpec, target);
+      edit.push({ uri: manifestUri, range: dep.specRange, newText: rewritten.spec });
+      widened = rewritten.widened;
+    }
+    const command = mod.lockCommand({ manifestPath, ...(lockfilePath ? { lockfilePath } : {}), name: dep.name, target });
+    return {
+      edit,
+      ...(command !== undefined ? { lockCommand: { cwd: dirname(lockfilePath ?? manifestPath), command } } : {}),
+      kind: "direct",
+      ...(widened !== undefined ? { widened } : {}),
+    };
+  }
+}
+
+/** Unknown severity is kept: hiding a vulnerability of unknown severity would fail open. */
+function passesSeverity(v: Vuln, settings: Settings): boolean {
+  return v.severity === "unknown" || severityRank(v.severity) >= MIN_RANK[settings.minimumSeverity];
+}
+
+export async function scanDocument(uri: string, path: string, text: string, ctx: ScanContext, signal?: AbortSignal): Promise<ScanResult> {
+  const prepared = await prepareDocument(uri, path, text, ctx);
+  if (!prepared) return { findings: [], offline: false, parseError: false };
+  if ("parseError" in prepared) return { findings: [], offline: false, parseError: true };
+  if (prepared.queries.length === 0) return { findings: [], offline: false, parseError: false };
+  const outcome = await ctx.osv.lookup(prepared.queries, signal);
+  return { findings: prepared.finalize(outcome.results), offline: outcome.offline, parseError: false };
+}
