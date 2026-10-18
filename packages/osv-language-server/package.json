@@ -10,7 +10,7 @@
     "osv-check": "dist/cli.js"
   },
   "scripts": {
-    "build": "echo build is configured in a later task"
+    "build": "node build.mjs"
   },
   "dependencies": {
     "@renovatebot/pep440": "^5.0.1",
