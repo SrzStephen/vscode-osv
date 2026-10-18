@@ -1,7 +1,7 @@
 # osv-language-server
 
 A Language Server (LSP) and CLI that report known vulnerabilities from
-[OSV.dev](https://osv.dev) in npm and PyPI dependency manifests and lockfiles, with quick fixes.
+[OSV.dev](https://osv.dev) in npm, PyPI, Cargo, Maven/Gradle, Go and NuGet dependency manifests and lockfiles, with quick fixes.
 It powers the OSV Vulnerabilities VS Code extension and works with any LSP client.
 
 ## Binaries
