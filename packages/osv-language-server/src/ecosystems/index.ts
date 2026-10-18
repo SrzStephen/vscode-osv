@@ -1,8 +1,9 @@
 import picomatch from "picomatch";
 import type { EcosystemModule } from "./types.js";
 import { npmModule } from "./npm/index.js";
+import { pypiModule } from "./pypi/index.js";
 
-export const ALL_MODULES: EcosystemModule[] = [npmModule];
+export const ALL_MODULES: EcosystemModule[] = [npmModule, pypiModule];
 
 /** For tests; replaces any module with the same id. Production modules are appended to ALL_MODULES directly. */
 export function registerModule(m: EcosystemModule): void {
