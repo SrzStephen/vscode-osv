@@ -119,6 +119,16 @@ describe("scanner contract extensions", () => {
     expect(res.findings[0]!.update?.edit).toEqual([{ uri: "file:///ws/versions.txt", range: r(3, 4, 9), newText: "2.0.0" }]);
   });
 
+  it("anchors a same-file specLocation (path \"\") to the manifest", async () => {
+    const base = fakeModule();
+    const mod = fakeModule({
+      parseManifest: (t, n) =>
+        base.parseManifest(t, n).map((d) => ({ ...d, rawSpec: "1.0.0", lowerBound: "1.0.0", specLocation: { path: "", range: r(5, 1, 6), rawSpec: "1.0.0" } })),
+    });
+    const res = await scanDocument("file:///ws/deps.txt", "/ws/deps.txt", "foo\n", ctx(mod, {}));
+    expect(res.findings[0]!.update?.edit).toEqual([{ uri: "file:///ws/deps.txt", range: r(5, 1, 6), newText: "2.0.0" }]);
+  });
+
   it("passes current to transitiveFix", async () => {
     let got: string | undefined;
     const base = fakeModule();

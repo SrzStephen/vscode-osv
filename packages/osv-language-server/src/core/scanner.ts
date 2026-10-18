@@ -65,6 +65,11 @@ function hasNodeModulesSegment(path: string): boolean {
   return path.split(/[\\/]/).includes("node_modules");
 }
 
+/** Parsers mark a version that lives in the manifest itself with specLocation.path ""; point it at that file. */
+function anchorSpecLocations(deps: DeclaredDep[], manifestPath: string): DeclaredDep[] {
+  return deps.map((d) => (d.specLocation?.path === "" ? { ...d, specLocation: { ...d.specLocation, path: manifestPath } } : d));
+}
+
 function siblingUri(uri: string, path: string): string {
   return uri.slice(0, uri.lastIndexOf("/") + 1) + encodeURIComponent(basename(path));
 }
@@ -93,8 +98,8 @@ export async function prepareDocument(
     const parsed = parseOrThrow(() => module.parseManifest(text, fileName));
     if (!parsed.ok) return { parseError: true };
     const deps = module.resolveExternal
-      ? await module.resolveExternal(parsed.value, { manifestPath: path, rootDir: ctx.rootDir, files: ctx.files })
-      : parsed.value;
+      ? await module.resolveExternal(anchorSpecLocations(parsed.value, path), { manifestPath: path, rootDir: ctx.rootDir, files: ctx.files })
+      : anchorSpecLocations(parsed.value, path);
     const lockFile = module.manifestIsExact ? undefined : await findLockfile(path, module, ctx.rootDir, ctx.files);
     let locked: ResolvedDep[] | undefined;
     if (lockFile) {
@@ -124,8 +129,8 @@ export async function prepareDocument(
       const m = parseOrThrow(() => module.parseManifest(manifestFile.text, basename(manifestFile.path)));
       if (m.ok) {
         declared = module.resolveExternal
-          ? await module.resolveExternal(m.value, { manifestPath: manifestFile.path, rootDir: ctx.rootDir, files: ctx.files })
-          : m.value;
+          ? await module.resolveExternal(anchorSpecLocations(m.value, manifestFile.path), { manifestPath: manifestFile.path, rootDir: ctx.rootDir, files: ctx.files })
+          : anchorSpecLocations(m.value, manifestFile.path);
       }
     }
     const manifestUri = manifestFile ? siblingUri(uri, manifestFile.path) : undefined;
