@@ -23,7 +23,8 @@ export interface FakeOsvRequest {
 
 interface BatchQuery {
   package: { name: string; ecosystem: string };
-  version: string;
+  /** Absent for a package-only query. */
+  version?: string;
   page_token?: string;
 }
 
@@ -44,7 +45,7 @@ export async function startFakeOsv(data: FakeOsvData, opts: FakeOsvOptions = {})
   };
 
   const queryOne = (q: BatchQuery) => {
-    const ids = data.packages[`${q.package.ecosystem}|${q.package.name}|${q.version}`] ?? [];
+    const ids = data.packages[`${q.package.ecosystem}|${q.package.name}|${q.version ?? ""}`] ?? [];
     const start = q.page_token ? Number(q.page_token) : 0;
     const end = opts.pageSize ? start + opts.pageSize : ids.length;
     const vulns = ids.slice(start, end).map((id) => ({ id, modified: data.records[id]?.modified ?? "1970-01-01T00:00:00Z" }));

@@ -202,3 +202,26 @@ describe("osv-check Phase 2 ecosystems", () => {
     });
   }
 });
+
+describe("osv-check Phase 3 ecosystems", () => {
+  const osvRecord = (id: string) => JSON.parse(readFileSync(join(__dirname, "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
+  const CASES: { repo: string; key: string; ids: string[]; line: RegExp }[] = [
+    { repo: "rubygems", key: "RubyGems|rack|2.2.3", ids: ["GHSA-22f2-v57c-j9cx", "GHSA-625h-95r8-8xpm", "GHSA-6xw4-3v39-52mm"], line: /Gemfile:3:\d+ {2}\w+ {2}rack 2\.2\.3 → 2\.2\.20 {2}/ },
+    { repo: "packagist", key: "Packagist|guzzlehttp/guzzle|7.4.4", ids: ["GHSA-25mq-v84q-4j7r", "GHSA-f283-ghqc-fg79"], line: /composer\.json:5:\d+ {2}\w+ {2}guzzlehttp\/guzzle 7\.4\.4 → 7\.15\.1 {2}/ },
+    { repo: "actions", key: "GitHub Actions|tj-actions/changed-files|", ids: ["GHSA-mrrh-fwg8-r2c3", "GHSA-mcph-m25j-8j63"], line: /ci\.yml:7:\d+ {2}\w+ {2}tj-actions\/changed-files 45 → 46\.0\.1 {2}/ },
+    { repo: "pub", key: "Pub|http|0.12.0", ids: ["GHSA-4rgh-jx4f-qfcq"], line: /pubspec\.yaml:6:\d+ {2}\w+ {2}http 0\.12\.0 → 0\.13\.3 {2}/ },
+    { repo: "hex", key: "Hex|plug|1.3.0", ids: ["EEF-CVE-2026-56813"], line: /mix\.exs:\d+:\d+ {2}\w+ {2}plug 1\.3\.0 → 1\.16\.6 {2}/ },
+    { repo: "swift", key: "SwiftURL|github.com/apple/swift-nio|2.29.0", ids: ["GHSA-cq87-8r7h-962v", "GHSA-r3rc-9hpw-54v9", "GHSA-rj37-6j9x-74q6"], line: /Package\.swift:7:\d+ {2}\w+ {2}github\.com\/apple\/swift-nio 2\.29\.0 → 2\.100\.0 {2}/ },
+  ];
+
+  for (const c of CASES) {
+    it(`${c.repo}: reports the vulnerable dependency with exit 1`, async () => {
+      const fake = await startFakeOsv({ packages: { [c.key]: c.ids }, records: Object.fromEntries(c.ids.map((id) => [id, osvRecord(id)])) });
+      cleanups.push(() => fake.close());
+      const r = await check(join(REPOS, c.repo), [], fake);
+      expect(r.code).toBe(1);
+      expect(r.stdout).toMatch(c.line);
+      expect(r.stderr).toBe("");
+    });
+  }
+});

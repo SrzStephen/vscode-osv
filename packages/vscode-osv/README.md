@@ -1,6 +1,6 @@
 # OSV Vulnerabilities for VS Code
 
-Highlights known vulnerabilities ([OSV.dev](https://osv.dev)) in npm, PyPI, Cargo, Maven/Gradle, Go and NuGet dependency
+Highlights known vulnerabilities ([OSV.dev](https://osv.dev)) in npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex and Swift dependency
 manifests and lockfiles, with one-click fixes.
 
 ## Features

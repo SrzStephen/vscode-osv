@@ -3,7 +3,7 @@
 `osv-check` is a command-line scanner that ships in the `osv-language-server` npm package
 (it installs two binaries: `osv-language-server` and `osv-check`). It uses the same engine as
 the VS Code extension and reports known vulnerabilities (from [OSV.dev](https://osv.dev)) in
-npm, PyPI, Cargo, Maven/Gradle, Go and NuGet manifests and lockfiles.
+npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex and Swift manifests and lockfiles.
 
 ```
 osv-check [paths...]
@@ -73,7 +73,7 @@ The hook (`.pre-commit-hooks.yaml` in this repository) uses `language: node` and
 manifest or lockfile names: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,
 `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `requirements*.txt`, `requirements/*.txt`,
 `pyproject.toml`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.lock`,
-`pylock.toml`, `pylock.*.toml`, `Cargo.toml`, `Cargo.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile`, `go.mod`, `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config` and `packages.lock.json`. The `files:` regex is generated from the ecosystem modules (`npm run sync-patterns`), so it stays in step with them.
+`pylock.toml`, `pylock.*.toml`, `Cargo.toml`, `Cargo.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile`, `go.mod`, `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config`, `packages.lock.json`, `Gemfile`, `gems.rb`, `*.gemspec`, `Gemfile.lock`, `gems.locked`, `composer.json`, `composer.lock`, `.github/workflows/*.yml`, `.github/workflows/*.yaml`, `action.yml`, `action.yaml`, `pubspec.yaml`, `pubspec.lock`, `mix.exs`, `mix.lock`, `Package.swift` and `Package.resolved`. The `files:` regex is generated from the ecosystem modules (`npm run sync-patterns`), so it stays in step with them.
 
 This hook is exercised end to end by `scripts/test-precommit.sh`.
 

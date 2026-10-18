@@ -262,7 +262,7 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
   });
 });
 
-describe("language server: Phase 2 ecosystems", { timeout: 30_000 }, () => {
+describe("language server: Phase 2 and 3 ecosystems", { timeout: 30_000 }, () => {
   const rec = (id: string) => JSON.parse(readFileSync(join(__dirname, "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
   const LOG4J = ["GHSA-jfh8-c2jp-5v3q", "GHSA-7rjr-3q55-vv33", "GHSA-p6xc-xr62-6r2g", "GHSA-8489-44mv-ggj8"];
 
@@ -359,5 +359,24 @@ describe("language server: Phase 2 ecosystems", { timeout: 30_000 }, () => {
     const propsUri = pathToFileURL(join(r.rootDir, "Directory.Packages.props")).href;
     expect(Object.keys(changes)).toEqual([propsUri]);
     expect(changes[propsUri]![0]!.newText).toBe("13.0.1");
+  });
+
+  it("a workflow file: publishes a diagnostic on the vulnerable action ref and offers the version edit", async () => {
+    const path = join(".github", "workflows", "ci.yml");
+    const text = readFileSync(join(__dirname, "fixtures", "repos", "actions", path), "utf8");
+    const r = await open({ [path]: text }, path, "GitHub Actions|tj-actions/changed-files|", ["GHSA-mrrh-fwg8-r2c3", "GHSA-mcph-m25j-8j63"]);
+    expect(r.diagnostics.length).toBeGreaterThan(0);
+    // The diagnostic covers `v45` on line 7 of the workflow.
+    expect(r.diagnostics[0]!.range.start.line).toBe(6);
+    expect(text.split("\n")[6]!.slice(r.diagnostics[0]!.range.start.character, r.diagnostics[0]!.range.end.character)).toBe("v45");
+    expect(editsOf(r.actions[0]!)[r.uri]![0]!.newText).toBe("v46.0.1");
+  });
+
+  it("Gemfile: a compound requirement gets a code action that raises the lower bound", async () => {
+    const text = readFileSync(join(__dirname, "fixtures", "repos", "rubygems", "Gemfile"), "utf8");
+    const r = await open({ Gemfile: text }, "Gemfile", "RubyGems|rack|2.2.3", ["GHSA-22f2-v57c-j9cx", "GHSA-625h-95r8-8xpm", "GHSA-6xw4-3v39-52mm"]);
+    expect(r.diagnostics.length).toBeGreaterThan(0);
+    expect(r.actions).toHaveLength(1);
+    expect(editsOf(r.actions[0]!)[r.uri]![0]!.newText).toBe(`"~> 2.2", ">= 2.2.20"`);
   });
 });

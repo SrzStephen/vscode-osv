@@ -1,6 +1,6 @@
 - id: osv-check
   name: osv-check
-  description: Block commits that add known-vulnerable npm, PyPI, Cargo, Maven/Gradle, Go or NuGet dependencies (OSV.dev).
+  description: Block commits that add known-vulnerable npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex or Swift dependencies (OSV.dev).
   entry: osv-check
   language: node
   pass_filenames: true

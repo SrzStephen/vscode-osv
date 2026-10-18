@@ -11,7 +11,8 @@ This repository contains:
 | [`packages/vscode-osv`](packages/vscode-osv) | The VS Code extension (a thin client) |
 | [`packages/osv-language-server`](packages/osv-language-server) | The language server, plus the `osv-check` CLI for pre-commit hooks and CI |
 
-Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Maven and Gradle), **Go** and **C#** (NuGet).
+Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Maven and Gradle), **Go**, **C#** (NuGet),
+**Ruby** (RubyGems), **PHP** (Packagist), **GitHub Actions**, **Dart/Flutter** (Pub), **Elixir** (Hex) and **Swift**.
 
 ## Features
 
@@ -42,6 +43,32 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 | Java/Kotlin (Maven) | `pom.xml`, `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle.lockfile`, `buildscript-gradle.lockfile` |
 | Go | `go.mod` |
 | C# (NuGet) | `*.csproj`, `*.fsproj`, `*.vbproj`, `Directory.Packages.props`, `Directory.Build.props`, `packages.config`, `packages.lock.json` |
+| Ruby (RubyGems) | `Gemfile`, `gems.rb`, `*.gemspec`, `Gemfile.lock`, `gems.locked` |
+| PHP (Packagist) | `composer.json`, `composer.lock` |
+| GitHub Actions | `.github/workflows/*.yml`, `.github/workflows/*.yaml`, `action.yml`, `action.yaml` |
+| Dart/Flutter (Pub) | `pubspec.yaml`, `pubspec.lock` |
+| Elixir (Hex) | `mix.exs`, `mix.lock` |
+| Swift (SwiftPM) | `Package.swift`, `Package.resolved` |
+
+### Known limitations
+
+- **Heuristic parsers.** `Gemfile`, `*.gemspec`, `mix.exs`, `Package.swift` and `build.gradle(.kts)` are
+  scanned with line- and token-based heuristics, not by the real Ruby, Elixir, Swift or Groovy/Kotlin
+  parsers. Declarations built dynamically are not seen.
+- **`Gemfile`:** the parser is line-based. It skips version arrays and heredocs.
+- **`mix.exs`:** only the first list literal in the `deps` function is read, so deps built with `++`,
+  conditionals or `@attr` module attributes are missed.
+- **`Package.swift`:** package URLs are recognised only for hosts with a dot, so `localhost`, IPv6
+  and underscore hosts are skipped.
+- **Lower-bound fallback.** When a manifest declares a range and there is no lockfile, the lower
+  bound of the range is checked, so a vulnerability that only affects newer versions inside the range
+  is not reported. Such findings are marked as a lower-bound check.
+- **NuGet casing without a lockfile.** NuGet package IDs are case-insensitive, but without a lockfile
+  the name is checked as written in the project file.
+- **GitHub Actions.** OSV returns nothing for a versioned query on an action, so the extension asks for
+  every record on the action and matches your ref against the affected ranges itself. Only
+  version-like refs (`v4`, `4.1`, `v4.1.2`) are checked; commit SHAs, branches and local or Docker
+  `uses:` entries are skipped.
 
 ## Privacy
 

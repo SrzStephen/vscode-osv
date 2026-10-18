@@ -101,6 +101,7 @@ function parseTuple(text: string, ix: LineIndex, open: number, close: number): D
 /**
  * Parses the dependency tuples of the `deps` function in mix.exs: `{:name, "req"}`, `{:name, "req", opts}`
  * and `{:name, opts}`. Never throws; tuples it does not understand are skipped.
+ * Only the first list literal in the deps function is read, so deps built with `++`, conditionals or `@attr` module attributes are missed.
  */
 export function parseMixExs(text: string): DeclaredDep[] {
   const fn = DEPS_FUNCTION.exec(text);
