@@ -71,6 +71,19 @@ describe("resolveCargoWorkspace", () => {
     const deps = await resolveCargoWorkspace(parseCargoManifest(member), { manifestPath: "/r/m/Cargo.toml", rootDir: "/r", files });
     expect(deps.find((d) => d.name === "tokio")).toMatchObject({ kind: "unresolved", rawSpec: undefined });
   });
+  const renamedRoot = '[workspace]\n[workspace.dependencies]\nfoo = { package = "real", version = "1" }\n';
+  it("inherits by table key and adopts the renamed crate name", async () => {
+    const m = '[dependencies]\nfoo = { workspace = true }\n';
+    const files = memFiles({ "/r/Cargo.toml": renamedRoot, "/r/m/Cargo.toml": m });
+    const [dep] = await resolveCargoWorkspace(parseCargoManifest(m), { manifestPath: "/r/m/Cargo.toml", rootDir: "/r", files });
+    expect(dep).toMatchObject({ name: "real", rawSpec: "1", lowerBound: "1.0.0", kind: "registry", group: "dependencies" });
+  });
+  it("does not bind a member key to a workspace entry renamed to it", async () => {
+    const m = '[dependencies]\nreal = { workspace = true }\n';
+    const files = memFiles({ "/r/Cargo.toml": renamedRoot, "/r/m/Cargo.toml": m });
+    const [dep] = await resolveCargoWorkspace(parseCargoManifest(m), { manifestPath: "/r/m/Cargo.toml", rootDir: "/r", files });
+    expect(dep).toMatchObject({ name: "real", kind: "unresolved", rawSpec: undefined });
+  });
   it("skips a nearer Cargo.toml without [workspace]", async () => {
     const files = memFiles({ "/r/Cargo.toml": root, "/r/a/Cargo.toml": "[package]\nname='a'\n", "/r/a/m/Cargo.toml": member });
     const deps = await resolveCargoWorkspace(parseCargoManifest(member), { manifestPath: "/r/a/m/Cargo.toml", rootDir: "/r", files });

@@ -63,6 +63,9 @@ function entriesOf(body: TOMLKeyValue[]): Entry[] {
   return [...entries.values()];
 }
 
+/** The table key each parsed dependency was declared under; differs from `name` when `package` renames it. */
+const declaredKeys = new WeakMap<DeclaredDep, string>();
+
 function toDep(entry: Entry, group: string, text: string, ix: LineIndex): DeclaredDep {
   const { props } = entry;
   const versionNode = entry.shorthand ?? props.get("version");
@@ -75,7 +78,7 @@ function toDep(entry: Entry, group: string, text: string, ix: LineIndex): Declar
   const ws = props.get("workspace");
   const inherited = ws?.type === "TOMLValue" && ws.kind === "boolean" && ws.value === true;
   const kind: DepKind = props.has("git") ? "git" : props.has("path") ? "path" : "registry";
-  return {
+  const dep: DeclaredDep = {
     name,
     rawSpec,
     nameRange: ix.range(...entry.keyRange),
@@ -84,6 +87,8 @@ function toDep(entry: Entry, group: string, text: string, ix: LineIndex): Declar
     kind: inherited || (kind === "registry" && lowerBound === undefined) ? "unresolved" : kind,
     group: inherited ? `${group}${WORKSPACE_SUFFIX}` : group,
   };
+  declaredKeys.set(dep, entry.key);
+  return dep;
 }
 
 /** Dependencies from a Cargo.toml. Throws ParseError on invalid TOML. */
@@ -141,10 +146,11 @@ export async function resolveCargoWorkspace(
   return deps.map((dep) => {
     if (!dep.group?.endsWith(WORKSPACE_SUFFIX)) return dep;
     const group = dep.group.slice(0, -WORKSPACE_SUFFIX.length);
-    const source = workspace?.deps.find((d) => d.group === "workspace.dependencies" && d.name === dep.name);
+    const source = workspace?.deps.find((d) => d.group === "workspace.dependencies" && declaredKeys.get(d) === declaredKeys.get(dep));
     if (!source?.rawSpec || !source.specRange) return { ...dep, group };
     return {
       ...dep,
+      name: source.name,
       group,
       rawSpec: source.rawSpec,
       lowerBound: source.lowerBound,
