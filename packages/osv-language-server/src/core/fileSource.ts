@@ -15,10 +15,12 @@ export function overlayFileSource(open: (path: string) => string | undefined, ba
   };
 }
 
+/** Reads UTF-8 from disk, dropping a leading BOM as editors do, so positions match the editor's. */
 export const nodeFileSource: FileSource = {
   async read(path) {
     try {
-      return await fs.readFile(path, "utf8");
+      const text = await fs.readFile(path, "utf8");
+      return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
     } catch (e) {
       const code = (e as NodeJS.ErrnoException).code;
       if (code === "ENOENT" || code === "EISDIR") return undefined;

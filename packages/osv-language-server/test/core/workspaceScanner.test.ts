@@ -105,6 +105,35 @@ describe("scanFiles", () => {
     expect(r.parseErrors[1]!.message).toBe("unreadable");
   });
 
+  it("a leading BOM does not shift columns (they match the editor, which hides the BOM)", async () => {
+    const flask: OsvRecord = {
+      id: "GHSA-test-flask",
+      modified: "2026-01-01T00:00:00Z",
+      affected: [{ package: { ecosystem: "PyPI", name: "flask" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "2.2.5" }] }] }],
+    };
+    const ctx: ScanContext = {
+      files: nodeFileSource,
+      osv: {
+        lookup: async (queries: PackageQuery[]) => ({
+          results: new Map(queries.map((q) => [`${q.ecosystem}|${q.name}|${q.version}`, { records: q.name === "flask" ? [flask] : [], cached: false }])),
+          offline: false,
+          skipped: [],
+        }),
+      },
+      settings: DEFAULT_SETTINGS,
+      ignores: new IgnoreMatcher([], [], new Date()),
+      rootDir: root,
+    };
+    const path = join(root, "svc", "requirements.txt");
+    const plain = await scanFiles([path], ctx);
+    writeFileSync(path, "﻿flask==2.0.0\nrequests==2.0.0\n");
+    expect(await nodeFileSource.read(path)).toBe("flask==2.0.0\nrequests==2.0.0\n");
+    const bom = await scanFiles([path], ctx);
+    expect(plain.findings).toHaveLength(1);
+    expect(bom.findings.map((f) => f.range)).toEqual(plain.findings.map((f) => f.range));
+    expect(bom.findings[0]!.range.start).toEqual({ line: 0, character: 5 });
+  });
+
   it("a module that throws is isolated to its file; other files still yield findings", async () => {
     const npm = ALL_MODULES.find((m) => m.id === "npm")!;
     const broken: EcosystemModule = {
