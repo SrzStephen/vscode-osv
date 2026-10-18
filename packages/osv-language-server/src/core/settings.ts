@@ -9,6 +9,7 @@ export interface Settings {
   scanWorkspaceOnStartup: boolean;
   cacheTtlHours: number;
   apiBaseUrl: string;
+  caCertificatePath: string;
   ignoredVulnerabilities: string[];
   offerLockCommand: OfferLockCommand;
 }
@@ -21,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scanWorkspaceOnStartup: false,
   cacheTtlHours: 48,
   apiBaseUrl: "https://api.osv.dev",
+  caCertificatePath: "",
   ignoredVulnerabilities: [],
   offerLockCommand: "ask",
 };
@@ -45,6 +47,7 @@ export function normalizeSettings(raw: unknown): Settings {
 
   const ttl = typeof r.cacheTtlHours === "number" && Number.isFinite(r.cacheTtlHours) ? Math.max(1, r.cacheTtlHours) : d.cacheTtlHours;
   const apiBaseUrl = typeof r.apiBaseUrl === "string" && r.apiBaseUrl.trim() !== "" ? r.apiBaseUrl.trim().replace(/\/+$/, "") : d.apiBaseUrl;
+  const caCertificatePath = typeof r.caCertificatePath === "string" ? r.caCertificatePath.trim() : d.caCertificatePath;
 
   return {
     enable: bool(r.enable, d.enable),
@@ -54,6 +57,7 @@ export function normalizeSettings(raw: unknown): Settings {
     scanWorkspaceOnStartup: bool(r.scanWorkspaceOnStartup, d.scanWorkspaceOnStartup),
     cacheTtlHours: ttl,
     apiBaseUrl,
+    caCertificatePath,
     ignoredVulnerabilities: Array.isArray(r.ignoredVulnerabilities) ? r.ignoredVulnerabilities.filter((x): x is string => typeof x === "string") : [],
     offerLockCommand: typeof r.offerLockCommand === "string" && LOCK_MODES.includes(r.offerLockCommand) ? (r.offerLockCommand as OfferLockCommand) : d.offerLockCommand,
   };

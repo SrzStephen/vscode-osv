@@ -27,6 +27,7 @@
       "description": "Lock commands are disabled in Restricted Mode.",
       "restrictedConfigurations": [
         "osv.apiBaseUrl",
+        "osv.caCertificatePath",
         "osv.offerLockCommand"
       ]
     }
@@ -149,6 +150,11 @@
           "type": "string",
           "default": "https://api.osv.dev",
           "description": "Base URL of the OSV API (for a mirror or proxy). Only package name, version and ecosystem are sent."
+        },
+        "osv.caCertificatePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a PEM file of CA certificates to trust in addition to the default trust store, e.g. for a TLS-inspecting proxy. Empty uses the SSL_CERT_FILE environment variable (and every .pem or .crt file in SSL_CERT_DIR is also trusted), or only the default store when those are unset."
         },
         "osv.ignoredVulnerabilities": {
           "type": "array",
