@@ -1,4 +1,4 @@
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { EcosystemModule } from "../ecosystems/types.js";
 import type { FileSource } from "./fileSource.js";
 import type { DeclaredDep, ResolvedDep } from "./types.js";
@@ -11,16 +11,19 @@ interface FoundFile {
 /** Walks from the manifest's directory up to rootDir (inclusive, never above) for the first readable lockfile. */
 export async function findLockfile(manifestPath: string, module: EcosystemModule, rootDir: string, files: FileSource): Promise<FoundFile | undefined> {
   const names = module.lockfilesForManifest(basename(manifestPath));
-  let dir = dirname(manifestPath);
+  const root = resolve(rootDir);
+  let dir = dirname(resolve(manifestPath));
+  const rel = relative(root, dir);
+  // A manifest outside the workspace root must never read any lockfile.
+  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined;
   for (;;) {
     for (const name of names) {
       const path = join(dir, name);
       const text = await files.read(path);
       if (text !== undefined) return { path, text };
     }
-    const parent = dirname(dir);
-    if (dir === rootDir || parent === dir) return undefined;
-    dir = parent;
+    if (dir === root) return undefined;
+    dir = dirname(dir);
   }
 }
 
@@ -28,7 +31,7 @@ export async function findLockfile(manifestPath: string, module: EcosystemModule
 export async function findManifestForLockfile(lockfilePath: string, module: EcosystemModule, files: FileSource): Promise<FoundFile | undefined> {
   const name = module.manifestForLockfile(basename(lockfilePath));
   if (name === undefined) return undefined;
-  const path = join(dirname(lockfilePath), name);
+  const path = join(dirname(resolve(lockfilePath)), name);
   const text = await files.read(path);
   return text === undefined ? undefined : { path, text };
 }

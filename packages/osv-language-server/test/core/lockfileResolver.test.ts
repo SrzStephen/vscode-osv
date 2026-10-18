@@ -16,6 +16,31 @@ describe("lockfileResolver", () => {
     expect(await findLockfile("/ws2/package.json", npmModule, "/ws2", files)).toBeUndefined();
   });
 
+  it("returns undefined for a manifest outside rootDir even with an ancestor lockfile", async () => {
+    const files = memFiles({ "/package-lock.json": "{}", "/other/package-lock.json": "{}" });
+    expect(await findLockfile("/other/a/package.json", npmModule, "/ws", files)).toBeUndefined();
+  });
+
+  it("treats a trailing-slash rootDir as the same root", async () => {
+    const files = memFiles({ "/ws/package-lock.json": "{}", "/package-lock.json": "{}" });
+    expect((await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws/", files))?.path).toBe("/ws/package-lock.json");
+    expect(await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws/", memFiles({ "/package-lock.json": "{}" }))).toBeUndefined();
+  });
+
+  it("treats a sibling directory sharing the root's prefix as outside", async () => {
+    const files = memFiles({ "/ws2/package-lock.json": "{}" });
+    expect(await findLockfile("/ws2/package.json", npmModule, "/ws", files)).toBeUndefined();
+  });
+
+  it("with several direct entries the first in lockfile order wins", () => {
+    expect(resolveVersion(dep(), [locked("4.0.0", { direct: true }), locked("4.17.21", { direct: true })], npmModule)).toEqual({ version: "4.0.0", fromLockfile: true });
+  });
+
+  it("falls through to the lower bound when rawSpec is undefined", () => {
+    const d = dep({ rawSpec: undefined });
+    expect(resolveVersion(d, [locked("3.0.0", { requestedSpecs: ["^3.0.0"] }), locked("4.0.0")], npmModule)).toEqual({ version: "4.17.0", fromLockfile: false });
+  });
+
   it("finds the manifest beside a lockfile only", async () => {
     const files = memFiles({ "/ws/package.json": "{}", "/package.json": "{}" });
     expect((await findManifestForLockfile("/ws/package-lock.json", npmModule, files))?.path).toBe("/ws/package.json");
