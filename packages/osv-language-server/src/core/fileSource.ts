@@ -6,6 +6,15 @@ export interface FileSource {
   read(path: string): Promise<string | undefined>;
 }
 
+/** Open-document text wins over disk, so unsaved edits are what gets analyzed. */
+export function overlayFileSource(open: (path: string) => string | undefined, base: FileSource): FileSource {
+  return {
+    async read(path) {
+      return open(path) ?? base.read(path);
+    },
+  };
+}
+
 export const nodeFileSource: FileSource = {
   async read(path) {
     try {
