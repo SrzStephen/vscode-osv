@@ -17,5 +17,19 @@ export const DOCUMENT_GLOBS: string[] = [
   "pylock.toml",
   "pylock.*.toml",
   "Cargo.toml",
-  "Cargo.lock"
+  "Cargo.lock",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts",
+  "gradle/libs.versions.toml",
+  "gradle.lockfile",
+  "buildscript-gradle.lockfile",
+  "go.mod",
+  "*.csproj",
+  "*.fsproj",
+  "*.vbproj",
+  "Directory.Packages.props",
+  "Directory.Build.props",
+  "packages.config",
+  "packages.lock.json"
 ];

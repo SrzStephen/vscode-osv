@@ -5,4 +5,4 @@
   language: node
   pass_filenames: true
   additional_dependencies: ["osv-language-server@0.1.0"]
-  files: (^|/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lock|requirements[^/]*\.txt|requirements/[^/]*\.txt|pyproject\.toml|Pipfile|poetry\.lock|uv\.lock|Pipfile\.lock|pdm\.lock|pylock\.toml|pylock\.[^/]*\.toml|Cargo\.toml|Cargo\.lock)$
+  files: (^|/)(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lock|requirements[^/]*\.txt|requirements/[^/]*\.txt|pyproject\.toml|Pipfile|poetry\.lock|uv\.lock|Pipfile\.lock|pdm\.lock|pylock\.toml|pylock\.[^/]*\.toml|Cargo\.toml|Cargo\.lock|pom\.xml|build\.gradle|build\.gradle\.kts|gradle/libs\.versions\.toml|gradle\.lockfile|buildscript-gradle\.lockfile|go\.mod|[^/]*\.csproj|[^/]*\.fsproj|[^/]*\.vbproj|Directory\.Packages\.props|Directory\.Build\.props|packages\.config|packages\.lock\.json)$
