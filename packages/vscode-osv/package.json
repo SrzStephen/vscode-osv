@@ -1,0 +1,146 @@
+{
+  "name": "vscode-osv",
+  "displayName": "OSV Vulnerabilities",
+  "description": "Highlights known vulnerabilities (OSV.dev) in dependency manifests and lockfiles, with one-click fixes.",
+  "version": "0.1.0",
+  "publisher": "osv-vscode",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Lock commands are disabled in Restricted Mode."
+    }
+  },
+  "activationEvents": [
+    "workspaceContains:**/package.json",
+    "workspaceContains:**/package-lock.json",
+    "workspaceContains:**/npm-shrinkwrap.json",
+    "workspaceContains:**/yarn.lock",
+    "workspaceContains:**/pnpm-lock.yaml",
+    "workspaceContains:**/bun.lock",
+    "workspaceContains:**/requirements*.txt",
+    "workspaceContains:**/requirements/*.txt",
+    "workspaceContains:**/pyproject.toml",
+    "workspaceContains:**/Pipfile",
+    "workspaceContains:**/Pipfile.lock",
+    "workspaceContains:**/poetry.lock",
+    "workspaceContains:**/uv.lock",
+    "workspaceContains:**/pdm.lock",
+    "workspaceContains:**/pylock.toml",
+    "workspaceContains:**/pylock.*.toml",
+    "onLanguage:json",
+    "onLanguage:toml",
+    "onLanguage:pip-requirements"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "osv.scanWorkspaceUi",
+        "title": "OSV: Scan workspace"
+      },
+      {
+        "command": "osv.clearCacheUi",
+        "title": "OSV: Clear cache and rescan"
+      },
+      {
+        "command": "osv.showLog",
+        "title": "OSV: Show output log"
+      }
+    ],
+    "configuration": {
+      "title": "OSV",
+      "properties": {
+        "osv.enable": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "Master switch for OSV vulnerability scanning."
+        },
+        "osv.ecosystems": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "scope": "window",
+          "description": "Per-ecosystem switches, for example { \"npm\": true, \"pypi\": false }. Ecosystems not listed are enabled."
+        },
+        "osv.minimumSeverity": {
+          "type": "string",
+          "default": "low",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "description": "Hide findings below this severity."
+        },
+        "osv.scanLockfiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight vulnerable entries inside lockfiles."
+        },
+        "osv.scanWorkspaceOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run a workspace scan when the server starts."
+        },
+        "osv.cacheTtlHours": {
+          "type": "number",
+          "default": 48,
+          "minimum": 1,
+          "description": "How long package results stay fresh, in hours (minimum 1)."
+        },
+        "osv.apiBaseUrl": {
+          "type": "string",
+          "default": "https://api.osv.dev",
+          "description": "Base URL of the OSV API (for a mirror or proxy). Only package name, version and ecosystem are sent."
+        },
+        "osv.ignoredVulnerabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "description": "Vulnerability IDs (any alias) to suppress."
+        },
+        "osv.offerLockCommand": {
+          "type": "string",
+          "default": "ask",
+          "enum": [
+            "ask",
+            "always",
+            "never"
+          ],
+          "enumDescriptions": [
+            "Ask before running the lockfile update command.",
+            "Run the lockfile update command in the OSV terminal automatically.",
+            "Never offer or run lockfile update commands."
+          ],
+          "description": "Whether to run the package manager command that refreshes the lockfile after a manifest fix. Never runs in Restricted Mode."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test:integration": "node build.mjs --test && node dist/test/runTest.js",
+    "package": "node build.mjs && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/vscode": "1.90.0",
+    "mocha": "^11.7.5",
+    "vscode-languageclient": "^9.0.1"
+  }
+}

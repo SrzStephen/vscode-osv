@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "module": "ESNext", "moduleResolution": "Bundler", "types": ["node", "mocha"] },
+  "include": ["src", "test", "../osv-language-server/test/helpers/fakeOsv.ts"]
+}

@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p packages/osv-language-server --noEmit",
+    "typecheck": "tsc -p packages/osv-language-server --noEmit && tsc -p packages/vscode-osv --noEmit",
     "lint": "eslint .",
     "build": "npm run build --workspaces"
   },
