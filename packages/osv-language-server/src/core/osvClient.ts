@@ -35,7 +35,7 @@ const BACKOFF_BASE_MS = 500;
 
 interface BatchQuery {
   package: { name: string; ecosystem: string };
-  version: string;
+  version?: string;
   page_token?: string;
 }
 
@@ -103,7 +103,7 @@ export class OsvClient {
     const results: VulnRef[][] = chunk.map(() => []);
     let pending: { index: number; query: BatchQuery }[] = chunk.map((q, index) => ({
       index,
-      query: { package: { name: q.name, ecosystem: q.ecosystem }, version: q.version },
+      query: { package: { name: q.name, ecosystem: q.ecosystem }, ...(q.version === "" ? {} : { version: q.version }) },
     }));
     while (pending.length > 0) {
       const body = await this.request("POST", "/v1/querybatch", { queries: pending.map((p) => p.query) }, signal);

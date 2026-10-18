@@ -134,5 +134,6 @@ export interface Finding {
 export interface PackageQuery {
   ecosystem: string;
   name: string;
+  /** An empty string is a package-only query: no version is sent and every record for the package is returned. */
   version: string;
 }

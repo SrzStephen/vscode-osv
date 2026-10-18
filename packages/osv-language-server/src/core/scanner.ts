@@ -4,7 +4,7 @@ import { ALL_MODULES, classifyFile } from "../ecosystems/index.js";
 import { ParseError, type EcosystemModule } from "../ecosystems/types.js";
 import { mergeAliases } from "./aliases.js";
 import type { FileSource } from "./fileSource.js";
-import { calculateFix } from "./fixCalculator.js";
+import { calculateFix, isAffected } from "./fixCalculator.js";
 import { findingKey } from "./findingKey.js";
 import type { IgnoreMatcher } from "./ignores.js";
 import { findLockfile, findManifestForLockfile, nameKeyOf, pickLockedEntry, resolveVersion } from "./lockfileResolver.js";
@@ -117,7 +117,7 @@ export async function prepareDocument(
         source: "manifest",
         direct: true,
         checkedLowerBound: !resolved.fromLockfile && module.manifestIsExact !== true,
-        buildUpdate: (target) => directUpdate(module, dep, uri, path, lockfilePath, target),
+        buildUpdate: (target) => directUpdate(module, dep, uri, path, lockfilePath, target, text),
       });
     }
   } else {
@@ -156,7 +156,7 @@ export async function prepareDocument(
         buildUpdate: (target) => {
           if (direct) {
             if (!decl || !manifestFile || !manifestUri) return undefined;
-            return directUpdate(module, decl, manifestUri, manifestFile.path, path, target);
+            return directUpdate(module, decl, manifestUri, manifestFile.path, path, target, manifestFile.text);
           }
           return module.transitiveFix({
             name: r.name,
@@ -170,9 +170,11 @@ export async function prepareDocument(
     }
   }
 
+  // Client-side matching sends one package-only query per name; the version is applied at finalize.
+  const queryVersion = (c: Candidate): string => (module.clientSideMatching ? "" : c.version);
   const queries = new Map<string, PackageQuery>();
   for (const c of candidates) {
-    const q = { ecosystem: module.osvEcosystem, name: c.name, version: c.version };
+    const q = { ecosystem: module.osvEcosystem, name: c.name, version: queryVersion(c) };
     queries.set(queryKey(q), q);
   }
 
@@ -181,13 +183,17 @@ export async function prepareDocument(
     finalize(results) {
       const findings: Finding[] = [];
       for (const c of candidates) {
-        const found = results.get(queryKey({ ecosystem: module.osvEcosystem, name: c.name, version: c.version }));
+        const found = results.get(queryKey({ ecosystem: module.osvEcosystem, name: c.name, version: queryVersion(c) }));
         if (!found || found.records.length === 0) continue;
-        const records = found.records.filter((r) => {
+        let records = found.records.filter((r) => {
           if (isWellFormedRecord(r)) return true;
           (ctx.log ?? logToStderr)(`skipped malformed OSV record ${typeof r?.id === "string" ? r.id : "(no id)"} for ${c.name}`);
           return false;
         });
+        if (module.clientSideMatching) {
+          const key = nameKeyOf(module);
+          records = records.filter((r) => isAffected([r], module.osvEcosystem, c.name, c.version, module.versioning, key));
+        }
         if (records.length === 0) continue;
         const vulns = mergeAliases(records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
         if (vulns.length === 0) continue;
@@ -223,6 +229,7 @@ export async function prepareDocument(
     manifestPath: string,
     lockfilePath: string | undefined,
     target: string,
+    manifestText: string,
   ): UpdatePlan {
     const edit: UpdatePlan["edit"] = [];
     let widened: boolean | undefined;
@@ -235,7 +242,7 @@ export async function prepareDocument(
       edit.push({ uri: manifestUri, range: dep.specRange, newText: rewritten.spec });
       widened = rewritten.widened;
     }
-    const command = mod.lockCommand({ manifestPath, ...(lockfilePath ? { lockfilePath } : {}), name: dep.name, target });
+    const command = mod.lockCommand({ manifestPath, manifestText, ...(lockfilePath ? { lockfilePath } : {}), name: dep.name, target });
     return {
       edit,
       ...(command !== undefined ? { lockCommand: { cwd: dirname(lockfilePath ?? manifestPath), command } } : {}),

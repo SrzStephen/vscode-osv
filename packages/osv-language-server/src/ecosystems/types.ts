@@ -12,6 +12,8 @@ export interface LockCtx {
   lockfilePath?: string;
   name: string;
   target: string;
+  /** Text of the manifest, as the scanner read it. */
+  manifestText?: string;
 }
 
 export interface TransitiveCtx {
@@ -48,6 +50,8 @@ export interface EcosystemModule {
   nameKey?(name: string): string;
   /** Manifest versions are resolved versions (Go): no lockfile lookup, checkedLowerBound is false. */
   manifestIsExact?: boolean;
+  /** osv.dev does not match versions for this ecosystem: query by package only and filter records locally (GitHub Actions). */
+  clientSideMatching?: boolean;
   /** Fills rawSpec/lowerBound/kind/specLocation from other files; called by the scanner after parseManifest. */
   resolveExternal?(deps: DeclaredDep[], ctx: { manifestPath: string; rootDir: string; files: FileSource }): Promise<DeclaredDep[]>;
   /** Globs of files whose change should rescan open documents in the same tree. */
