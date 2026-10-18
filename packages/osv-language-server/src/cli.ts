@@ -42,17 +42,21 @@ Exit codes: 0 no findings, 1 findings, 2 usage error or network failure under --
 const SEVERITY_LEVELS: readonly string[] = ["low", "medium", "high", "critical"];
 const FORMATS: readonly string[] = ["text", "json"];
 const OFFLINE_WARNING = "warning: osv.dev unreachable and no cached data; results incomplete\n";
+const INCOMPLETE_SUMMARY = "Results incomplete: no vulnerability data (OSV unreachable, no cache)\n";
 const USER_AGENT = "osv-check";
 
-/** One line per finding plus a summary line, or "No known vulnerabilities". */
-export function formatText(findings: Finding[], cwd: string): string {
-  if (findings.length === 0) return "No known vulnerabilities\n";
+/**
+ * One line per finding plus a summary line. With no findings the summary is "No known vulnerabilities",
+ * unless the lookup was incomplete, where a clean summary would be a false pass.
+ */
+export function formatText(findings: Finding[], cwd: string, incomplete = false): string {
+  if (findings.length === 0) return incomplete ? INCOMPLETE_SUMMARY : "No known vulnerabilities\n";
   const lines = findings.map((f) => {
     const { line, character } = f.range.start;
     const [first, ...rest] = f.vulns;
     const more = rest.length > 0 ? `, +${rest.length} more` : "";
     const where = `${relative(cwd, fileURLToPath(f.uri))}:${line + 1}:${character + 1}`;
-    return `${where}  ${f.severity}  ${f.name} ${f.current} → ${f.fix.target ?? "no fix"}  ${first?.id ?? ""}${more}`;
+    return `${where}  ${f.severity}  ${f.name} ${f.current} → ${f.fix.target ?? "no fix"}  ${first?.id ?? ""}${more}${f.cached ? " (cached)" : ""}`;
   });
   const files = new Set(findings.map((f) => f.uri)).size;
   return `${lines.join("\n")}\n${findings.length} vulnerable dependencies in ${files} files\n`;
@@ -147,7 +151,7 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
     }
     findings.sort((a, b) => a.uri.localeCompare(b.uri) || a.range.start.line - b.range.start.line || a.range.start.character - b.range.start.character);
 
-    io.stdout(format === "json" ? `${JSON.stringify({ findings, offline }, null, 2)}\n` : formatText(findings, cwd));
+    io.stdout(format === "json" ? `${JSON.stringify({ findings, offline }, null, 2)}\n` : formatText(findings, cwd, incomplete));
     if (incomplete) {
       io.stderr(OFFLINE_WARNING);
       if (values.strict) return 2;

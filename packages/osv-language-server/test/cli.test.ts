@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { DiskCache } from "../src/core/cache.js";
 import { runCheck } from "../src/cli.js";
 import type { Finding, OsvRecord } from "../src/core/types.js";
 import { startFakeOsv } from "./helpers/fakeOsv.js";
@@ -94,6 +95,7 @@ describe("osv-check", () => {
   it("warns and exits 0 when OSV is unreachable and nothing is cached", async () => {
     const r = await check(VULNERABLE, [], await fakeOsv({ closed: true }));
     expect(r.code).toBe(0);
+    expect(r.stdout).toBe("Results incomplete: no vulnerability data (OSV unreachable, no cache)\n");
     expect(r.stderr).toBe("warning: osv.dev unreachable and no cached data; results incomplete\n");
   });
 
@@ -101,6 +103,19 @@ describe("osv-check", () => {
     const r = await check(VULNERABLE, ["--strict"], await fakeOsv({ closed: true }));
     expect(r.code).toBe(2);
     expect(r.stderr).toContain("warning: osv.dev unreachable and no cached data; results incomplete");
+  });
+
+  it("keeps the normal summary and marks findings (cached) when offline with stale cache", async () => {
+    const cacheDir = tmp("osv-cli-cache-");
+    const cache = new DiskCache(cacheDir);
+    const stale = new Date(Date.now() - 100 * 3600_000).toISOString();
+    await cache.putPackage({ ecosystem: "npm", name: "lodash", version: "4.17.15" }, { fetchedAt: stale, vulnIds: IDS.map((id) => ({ id, modified: records[id]!.modified })) });
+    for (const id of IDS) await cache.putVuln(records[id]!);
+    const r = await check(VULNERABLE, [], await fakeOsv({ closed: true }), cacheDir);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain("GHSA-35jh-r3h4-6jhm, +2 more (cached)\n");
+    expect(r.stdout).toContain("1 vulnerable dependencies in 1 files\n");
+    expect(r.stderr).toBe("");
   });
 
   it("serves a second run from the shared cache without contacting OSV", async () => {
