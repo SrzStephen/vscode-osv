@@ -1,0 +1,8 @@
+- id: osv-check
+  name: osv-check
+  description: Block commits that add known-vulnerable npm or PyPI dependencies (OSV.dev).
+  entry: osv-check
+  language: node
+  pass_filenames: true
+  additional_dependencies: ["osv-language-server@0.1.0"]
+  files: (^|/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lock|requirements[^/]*\.txt|requirements/[^/]+\.txt|pyproject\.toml|Pipfile(\.lock)?|poetry\.lock|uv\.lock|pdm\.lock|pylock(\.[^/]+)?\.toml)$

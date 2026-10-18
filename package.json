@@ -1,6 +1,7 @@
 {
   "name": "vs-code-osv",
   "private": true,
+  "files": [],
   "type": "module",
   "workspaces": [
     "packages/*"
