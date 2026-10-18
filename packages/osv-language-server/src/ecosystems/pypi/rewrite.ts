@@ -1,0 +1,55 @@
+import { compare, valid } from "@renovatebot/pep440";
+import type { RewriteResult } from "../types.js";
+import { clauseFloor, parseClauses, type Clause } from "./requirement.js";
+
+/** Whether `target` still satisfies an upper-bound clause; unparseable clauses are kept. */
+function admits(c: Clause, target: string): boolean {
+  if ((c.op !== "<" && c.op !== "<=") || valid(c.version) === null) return true;
+  const cmp = compare(target, c.version);
+  return c.op === "<" ? cmp < 0 : cmp <= 0;
+}
+
+/** Version for a `==X.*` clause: same segment count when the target's dropped segments are zero, else null. */
+function wildcardPrefix(prefixLen: number, target: string): string | null {
+  if (!/^\d+(\.\d+)*$/.test(target)) return null;
+  const parts = target.split(".");
+  if (parts.slice(prefixLen).some((p) => Number(p) !== 0)) return null;
+  while (parts.length < prefixLen) parts.push("0");
+  return parts.slice(0, prefixLen).join(".");
+}
+
+/** Rewrites a PEP 440 specifier so its lower bound becomes `target`, dropping upper bounds the target violates. */
+export function rewritePep440Spec(raw: string, target: string): RewriteResult {
+  const clauses = parseClauses(raw);
+
+  let floor = -1;
+  for (const [i, c] of clauses.entries()) {
+    const v = clauseFloor(c);
+    if (v !== undefined && (floor < 0 || compare(v, clauseFloor(clauses[floor]!)!) > 0)) floor = i;
+  }
+
+  const texts = clauses.map((c) => c.text);
+  if (floor >= 0) {
+    const c = clauses[floor]!;
+    const lead = /^\s*/.exec(c.text)![0];
+    const trail = /\s*$/.exec(c.text)![0];
+    const gap = /^\s*\S+?(\s*)\S/.exec(c.text)?.[1] ?? "";
+    let body: string;
+    if (c.op === "==" && c.version.endsWith(".*")) {
+      const prefix = wildcardPrefix(c.version.slice(0, -2).split(".").length, target);
+      body = prefix === null ? `~=${gap}${target}` : `==${gap}${prefix}.*`;
+    } else {
+      body = `${c.op}${gap}${target}`;
+    }
+    texts[floor] = lead + body + trail;
+  }
+
+  const kept: string[] = [];
+  let widened = false;
+  for (const [i, text] of texts.entries()) {
+    if (i !== floor && !admits(clauses[i]!, target)) widened = true;
+    else kept.push(text);
+  }
+  if (floor < 0) kept.unshift(`>=${target}`);
+  return { spec: kept.join(",").trim(), widened };
+}
