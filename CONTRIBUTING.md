@@ -1,5 +1,9 @@
 # Contributing
 
+With [`just`](https://github.com/casey/just) installed, `just check` runs the same gate as CI
+on every platform, `just ci` runs all of CI, and `just --list` shows the other recipes. The
+commands below are what they wrap.
+
 ```sh
 npm ci
 npm run lint && npm run typecheck && npm test && npm run build
