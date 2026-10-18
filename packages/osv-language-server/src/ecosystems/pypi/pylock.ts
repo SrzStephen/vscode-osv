@@ -1,5 +1,5 @@
 import type { ResolvedDep } from "../../core/types.js";
-import { findKey } from "./toml.js";
+import { findKey } from "../../core/toml.js";
 import { inlineTable, lockPackages, resolveGraph } from "./tomlLock.js";
 
 /** Parses pylock.toml (PEP 751). Direct deps are those of an editable directory package, if any. Throws ParseError on invalid TOML. */

@@ -1,5 +1,5 @@
 import type { ResolvedDep } from "../../core/types.js";
-import { findKey, isString } from "./toml.js";
+import { findKey, isString } from "../../core/toml.js";
 import { lockPackages, resolveUnrooted } from "./tomlLock.js";
 
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*/;

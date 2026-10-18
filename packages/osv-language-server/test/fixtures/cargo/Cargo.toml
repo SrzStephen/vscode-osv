@@ -1,0 +1,14 @@
+[package]
+name = "demo"
+version = "0.1.0"
+
+[dependencies]
+serde = "1.0"
+alias = { package = "real-name", version = "1.0.0" }
+mygit = { git = "https://github.com/x/mygit" }
+
+[target.'cfg(unix)'.dependencies]
+smallvec = "0.6.9"
+
+[dev-dependencies]
+tokio = { workspace = true }

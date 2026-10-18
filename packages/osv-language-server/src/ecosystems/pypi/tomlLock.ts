@@ -4,7 +4,7 @@ import type { ResolvedDep } from "../../core/types.js";
 import { resolveEntries, type LockEntry } from "../npm/lockCommon.js";
 import { ParseError } from "../types.js";
 import { normalizePypiName } from "./names.js";
-import { findKey, isString, keyName, parseTomlAst, plainContentRange } from "./toml.js";
+import { findKey, isString, keyName, parseTomlAst, plainContentRange } from "../../core/toml.js";
 
 type TOMLTable = AST.TOMLTable;
 type TOMLKeyValue = AST.TOMLKeyValue;

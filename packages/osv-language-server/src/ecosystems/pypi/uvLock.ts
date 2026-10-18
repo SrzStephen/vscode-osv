@@ -1,5 +1,5 @@
 import type { ResolvedDep } from "../../core/types.js";
-import { findKey } from "./toml.js";
+import { findKey } from "../../core/toml.js";
 import { inlineTable, lockPackages, resolveGraph } from "./tomlLock.js";
 
 /** Parses uv.lock. Direct deps are those of the project's virtual or editable package. Throws ParseError on invalid TOML. */

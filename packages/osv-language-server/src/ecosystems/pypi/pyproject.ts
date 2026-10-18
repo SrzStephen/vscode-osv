@@ -2,7 +2,8 @@ import { LineIndex } from "../../core/lineIndex.js";
 import type { DeclaredDep } from "../../core/types.js";
 import { normalizePypiName } from "./names.js";
 import { parseRequirement, pep440LowerBound } from "./requirement.js";
-import { isString, keyName, parseTomlAst, plainContentRange, specTableDeps, tablesByKey } from "./toml.js";
+import { isString, keyName, parseTomlAst, plainContentRange, tablesByKey } from "../../core/toml.js";
+import { specTableDeps } from "./toml.js";
 import type { AST } from "toml-eslint-parser";
 
 /** Lower bound of a Poetry constraint: `^X`, `~X` and a bare `X` floor at X, the rest follow PEP 440. */
