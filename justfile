@@ -46,6 +46,19 @@ build:
 package:
     npm run package -w vscode-osv
 
+# Opens a scratch copy of a fixture under test/fixtures/repos, so fixes that edit files
+# never touch the committed fixture. Pick another fixture with `just vscode actions`.
+# Build, then open VS Code with the extension loaded from source (Extension Development Host)
+vscode fixture="vulnerable": build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    src="packages/osv-language-server/test/fixtures/repos/{{fixture}}"
+    [ -d "$src" ] || { echo "No fixture named '{{fixture}}' under packages/osv-language-server/test/fixtures/repos" >&2; exit 1; }
+    dir="$(mktemp -d)"
+    cp -r "$src/." "$dir"
+    code --new-window --extensionDevelopmentPath="$PWD/packages/vscode-osv" "$dir"
+    echo "Opened $dir with the extension loaded from $PWD/packages/vscode-osv"
+
 # VS Code extension integration tests, headless on Linux
 [linux]
 integration:
