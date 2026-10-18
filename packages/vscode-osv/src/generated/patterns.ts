@@ -15,5 +15,7 @@ export const DOCUMENT_GLOBS: string[] = [
   "Pipfile.lock",
   "pdm.lock",
   "pylock.toml",
-  "pylock.*.toml"
+  "pylock.*.toml",
+  "Cargo.toml",
+  "Cargo.lock"
 ];

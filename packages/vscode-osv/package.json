@@ -48,6 +48,8 @@
     "workspaceContains:**/pdm.lock",
     "workspaceContains:**/pylock.toml",
     "workspaceContains:**/pylock.*.toml",
+    "workspaceContains:**/Cargo.toml",
+    "workspaceContains:**/Cargo.lock",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"
