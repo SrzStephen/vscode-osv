@@ -198,6 +198,18 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
     expect(hover).toBeNull();
   });
 
+  it("offline: a parse error does not clear the offline status", async () => {
+    const { server, uri, open } = await setup({ fake: "closed" });
+    await open();
+    expect(await server.notification("osv/status", 20_000)).toEqual({ offline: true });
+    await server.conn.sendNotification("textDocument/didChange", {
+      textDocument: { uri, version: 2 },
+      contentChanges: [{ text: '{"dependencies":' }],
+    });
+    await sleep(2_000); // past the 750 ms debounce; a parse error publishes nothing to wait on
+    expect(server.notifications.filter((n) => n.method === "osv/status").map((n) => n.params)).toEqual([{ offline: true }]);
+  });
+
   it("osv.update on a stale finding rescans and does not apply", async () => {
     const { server, uri, open } = await setup({ lockfile: false });
     await open();

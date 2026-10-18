@@ -144,8 +144,9 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
       const ctx = await contextFor(path, rootFor(path));
       const result = await scanDocument(uri, path, text, ctx, controller.signal);
       if (controller.signal.aborted) return false;
-      setOffline(result.offline);
+      // A parse error makes no lookup, so it says nothing about whether OSV is reachable.
       if (result.parseError) return false;
+      setOffline(result.offline);
       store.set(uri, result.findings);
       scannedVersion.set(uri, version);
       publish(uri, result.findings);
