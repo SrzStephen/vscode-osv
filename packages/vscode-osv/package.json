@@ -75,6 +75,8 @@
     "workspaceContains:**/.github/workflows/*.yaml",
     "workspaceContains:**/action.yml",
     "workspaceContains:**/action.yaml",
+    "workspaceContains:**/pubspec.yaml",
+    "workspaceContains:**/pubspec.lock",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"

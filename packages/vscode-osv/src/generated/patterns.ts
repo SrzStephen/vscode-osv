@@ -42,5 +42,7 @@ export const DOCUMENT_GLOBS: string[] = [
   ".github/workflows/*.yml",
   ".github/workflows/*.yaml",
   "action.yml",
-  "action.yaml"
+  "action.yaml",
+  "pubspec.yaml",
+  "pubspec.lock"
 ];
