@@ -1,0 +1,17 @@
+<project>
+  <groupId>com.example</groupId>
+  <artifactId>root</artifactId>
+  <version>3</version>
+  <properties>
+    <guava.version>31.0-jre</guava.version>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>1.26</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

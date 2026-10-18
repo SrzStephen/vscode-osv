@@ -1,0 +1,9 @@
+<project>
+  <parent>
+    <groupId>com.example</groupId>
+    <artifactId>root</artifactId>
+    <version>3</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>sub</artifactId>
+</project>

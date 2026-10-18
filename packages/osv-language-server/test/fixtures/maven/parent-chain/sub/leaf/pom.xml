@@ -1,0 +1,15 @@
+<project>
+  <parent>
+    <groupId>com.example</groupId>
+    <artifactId>sub</artifactId>
+    <version>3</version>
+  </parent>
+  <artifactId>leaf</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+    </dependency>
+  </dependencies>
+</project>
