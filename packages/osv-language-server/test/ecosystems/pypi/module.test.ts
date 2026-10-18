@@ -46,6 +46,22 @@ describe("pypiModule", () => {
     expect(pypiModule.transitiveFix(ctx("pdm.lock"))).toBeUndefined();
   });
 
+  it("builds no lock command from a package name with shell metacharacters", () => {
+    const ctx = (name: string, l: string) => ({ name, target: "2.0.7", lockfilePath: `/p/${l}` });
+    expect(pypiModule.transitiveFix(ctx("urllib3$(touch pwned)", "poetry.lock"))).toBeUndefined();
+    expect(pypiModule.transitiveFix(ctx("urllib3;rm -rf ~", "uv.lock"))).toBeUndefined();
+    expect(pypiModule.transitiveFix(ctx("zope.interface", "uv.lock"))?.lockCommand).toEqual({
+      cwd: "/p",
+      command: "uv lock --upgrade-package zope.interface",
+    });
+  });
+
+  it("builds no pip command from a manifest filename with shell metacharacters", () => {
+    expect(lock("requirements$(touch pwned).txt")).toBeUndefined();
+    expect(lock("requirements dev.txt")).toBeUndefined();
+    expect(lock("requirements_dev-1.txt")).toBe("pip install -r requirements_dev-1.txt");
+  });
+
   it("rewriteSpec dispatches Poetry vs PEP 440 styles", () => {
     expect(pypiModule.rewriteSpec("^1.0", "2.1.0").spec).toBe("^2.1.0");
     expect(pypiModule.rewriteSpec("~1.0", "2.1.0").spec).toBe("~2.1.0");

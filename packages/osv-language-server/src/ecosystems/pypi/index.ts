@@ -19,6 +19,10 @@ const LOCK_COMMANDS: Record<string, string> = {
   "pdm.lock": "pdm lock",
 };
 
+// Lock commands are sent to a terminal as text, so only shell-inert names and filenames are interpolated.
+const SAFE_PACKAGE_NAME = /^[A-Za-z0-9._-]+$/;
+const SAFE_FILENAME = /^[A-Za-z0-9._/-]+$/;
+
 function isPylock(name: string): boolean {
   return /^pylock(\..+)?\.toml$/.test(name);
 }
@@ -62,9 +66,12 @@ export const pypiModule: EcosystemModule = {
     const known = ctx.lockfilePath && LOCK_COMMANDS[basename(ctx.lockfilePath)];
     if (known) return known;
     const manifest = basename(ctx.manifestPath);
-    return !ctx.lockfilePath && /^requirements.*\.txt$/.test(manifest) ? `pip install -r ${manifest}` : undefined;
+    return !ctx.lockfilePath && /^requirements.*\.txt$/.test(manifest) && SAFE_FILENAME.test(manifest)
+      ? `pip install -r ${manifest}`
+      : undefined;
   },
   transitiveFix(ctx) {
+    if (!SAFE_PACKAGE_NAME.test(ctx.name)) return undefined;
     const command =
       { "poetry.lock": `poetry update ${ctx.name}`, "uv.lock": `uv lock --upgrade-package ${ctx.name}` }[
         basename(ctx.lockfilePath)
