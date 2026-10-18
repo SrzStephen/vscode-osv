@@ -1,11 +1,41 @@
+import { isAbsolute, relative } from "node:path";
+
 export interface SuggestLockCommandParams {
   cwd: string;
   command: string;
 }
 
+/** The part of a VS Code text document needed to save it before a lock command runs. */
+export interface SavableDocument {
+  readonly isDirty: boolean;
+  readonly fsPath: string;
+  save(): PromiseLike<boolean>;
+}
+
+/**
+ * Saves every dirty document inside `cwd`, so a lock command reads the edited manifest from disk.
+ * Resolves false when any save fails or reports false.
+ */
+export async function saveDirtyDocumentsUnder(cwd: string, docs: readonly SavableDocument[]): Promise<boolean> {
+  const inside = (p: string) => {
+    const rel = relative(cwd, p);
+    return rel !== "" && rel.split(/[\\/]/)[0] !== ".." && !isAbsolute(rel);
+  };
+  let ok = true;
+  for (const doc of docs) {
+    if (!doc.isDirty || !inside(doc.fsPath)) continue;
+    try {
+      if (!(await doc.save())) ok = false;
+    } catch {
+      ok = false;
+    }
+  }
+  return ok;
+}
+
 /** Everything handleSuggestLockCommand needs from VS Code, so the decision table is testable without the host. */
 export interface LockCommandHost {
-  runInTerminal(cwd: string, command: string): void;
+  runInTerminal(cwd: string, command: string): void | PromiseLike<void>;
   /** Resolves to the label of the button clicked, or undefined when dismissed. */
   ask(message: string): PromiseLike<string | undefined>;
   setOfferLockCommand(value: "always" | "never"): PromiseLike<void>;
@@ -27,7 +57,7 @@ export async function handleSuggestLockCommand(
 ): Promise<void> {
   if (settings.offerLockCommand === "never" || !trusted) return;
   if (settings.offerLockCommand === "always") {
-    host.runInTerminal(params.cwd, params.command);
+    await host.runInTerminal(params.cwd, params.command);
     return;
   }
   const choice = await host.ask(`Run \`${params.command}\` to update the lockfile?`);
@@ -35,9 +65,9 @@ export async function handleSuggestLockCommand(
     await host.setOfferLockCommand("never");
   } else if (choice === ALWAYS) {
     await host.setOfferLockCommand("always");
-    host.runInTerminal(params.cwd, params.command);
+    await host.runInTerminal(params.cwd, params.command);
   } else if (choice === RUN) {
-    host.runInTerminal(params.cwd, params.command);
+    await host.runInTerminal(params.cwd, params.command);
   }
 }
 

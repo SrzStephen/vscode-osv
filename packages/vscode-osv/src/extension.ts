@@ -12,6 +12,7 @@ import {
   RUN,
   appendIgnore,
   handleSuggestLockCommand,
+  saveDirtyDocumentsUnder,
   type LockCommandHost,
   type SuggestLockCommandParams,
 } from "./commandRunner.js";
@@ -43,7 +44,15 @@ function readSettings(): Record<string, unknown> {
 }
 
 const lockCommandHost: LockCommandHost = {
-  runInTerminal(cwd, command) {
+  async runInTerminal(cwd, command) {
+    // A fix applied through workspace/applyEdit leaves the manifest dirty; the command reads it from disk.
+    const docs = vscode.workspace.textDocuments
+      .filter((d) => d.uri.scheme === "file")
+      .map((d) => ({ isDirty: d.isDirty, fsPath: d.uri.fsPath, save: () => d.save() }));
+    if (!(await saveDirtyDocumentsUnder(cwd, docs))) {
+      void vscode.window.showErrorMessage(`OSV: could not save the edited files in ${cwd}; \`${command}\` was not run.`);
+      return;
+    }
     const terminal =
       vscode.window.terminals.find((t) => t.name === TERMINAL_NAME && (t.creationOptions as vscode.TerminalOptions).cwd === cwd) ??
       vscode.window.createTerminal({ name: TERMINAL_NAME, cwd });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { appendIgnore, handleSuggestLockCommand, type LockCommandHost } from "../../src/commandRunner.js";
+import { appendIgnore, handleSuggestLockCommand, saveDirtyDocumentsUnder, type LockCommandHost } from "../../src/commandRunner.js";
 
 const params = { cwd: "/w/app", command: "npm install --package-lock-only" };
 
@@ -59,6 +59,55 @@ describe("handleSuggestLockCommand", () => {
     const h = host(undefined);
     await handleSuggestLockCommand(params, { offerLockCommand: "ask" }, true, h);
     expect(h.calls).toHaveLength(1);
+  });
+});
+
+describe("saveDirtyDocumentsUnder", () => {
+  function doc(fsPath: string, isDirty: boolean, result: boolean | Error = true) {
+    const saved: string[] = [];
+    return {
+      saved,
+      d: {
+        fsPath,
+        isDirty,
+        save: async () => {
+          saved.push(fsPath);
+          if (result instanceof Error) throw result;
+          return result;
+        },
+      },
+    };
+  }
+
+  it("saves only dirty documents under cwd", async () => {
+    const docs = [
+      doc("/w/app/package.json", true),
+      doc("/w/app/sub/requirements.txt", true),
+      doc("/w/app/clean.json", false),
+      doc("/w/other/package.json", true),
+      doc("/w/app2/package.json", true),
+    ];
+    expect(await saveDirtyDocumentsUnder("/w/app", docs.map((x) => x.d))).toBe(true);
+    expect(docs.flatMap((x) => x.saved)).toEqual(["/w/app/package.json", "/w/app/sub/requirements.txt"]);
+  });
+
+  it("reports failure when a save returns false", async () => {
+    expect(await saveDirtyDocumentsUnder("/w/app", [doc("/w/app/package.json", true, false).d])).toBe(false);
+  });
+
+  it("reports failure when a save throws", async () => {
+    expect(await saveDirtyDocumentsUnder("/w/app", [doc("/w/app/package.json", true, new Error("EACCES")).d])).toBe(false);
+  });
+
+  it("handleSuggestLockCommand waits for an asynchronous runInTerminal", async () => {
+    const h = host();
+    let finished = false;
+    h.runInTerminal = async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      finished = true;
+    };
+    await handleSuggestLockCommand(params, { offerLockCommand: "always" }, true, h);
+    expect(finished).toBe(true);
   });
 });
 
