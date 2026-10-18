@@ -15,6 +15,17 @@ describe("parsePylock", () => {
     expect(deps.some((d) => d.direct)).toBe(false);
   });
 
+  it("derives via without a root, still marking nothing direct", () => {
+    const t = [
+      '[[packages]]\nname = "requests"\nversion = "2.25.0"\ndependencies = [{ name = "urllib3" }]\n',
+      '[[packages]]\nname = "urllib3"\nversion = "1.26.20"\n',
+    ].join("\n");
+    expect(parsePylock(t).map((d) => [d.name, d.direct, d.via])).toEqual([
+      ["requests", false, undefined],
+      ["urllib3", false, ["requests"]],
+    ]);
+  });
+
   it("takes direct deps from the editable package and derives via", () => {
     const text = read("pylock-edges.toml");
     const deps = parsePylock(text);

@@ -48,6 +48,11 @@ export function lockPackages(text: string, arrayKey: string): LockPackage[] {
   return packages;
 }
 
+/** `via` from the entries nothing depends on, which stand in for the unknown direct deps; none is reported direct. */
+function resolveIndirect(entries: LockEntry[]): ResolvedDep[] {
+  return resolveEntries(entries).map((d) => ({ ...d, direct: false }));
+}
+
 /**
  * Resolves a lockfile that records no direct deps (Poetry, PDM), where every package carries a version.
  * `depNames` lists the raw names a package depends on. Entries nothing depends on serve as roots for
@@ -70,7 +75,7 @@ export function resolveUnrooted(
   entries.forEach((entry, i) => {
     entry.edges = depNames(packages[i]!).flatMap((n) => (byName.get(normalizePypiName(n)) ?? []).map((e) => e.id));
   });
-  return resolveEntries(entries).map((d) => ({ ...d, direct: false }));
+  return resolveIndirect(entries);
 }
 
 interface Ref {
@@ -133,7 +138,7 @@ export function resolveGraph(
       ...refsOf(r.sub.get("dev-dependencies")),
     ]),
   );
-  return resolveEntries(entries, roots.length > 0 ? direct : []);
+  return roots.length > 0 ? resolveEntries(entries, direct) : resolveIndirect(entries);
 }
 
 /** The entries of an inline-table value such as uv's `source` or pylock's `directory`. */

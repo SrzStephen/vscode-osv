@@ -19,6 +19,15 @@ describe("parseUvLock", () => {
     expect(deps.find((d) => d.name === "urllib3")).toMatchObject({ direct: false, via: ["requests"] });
   });
 
+  it("derives via without a root package, still marking nothing direct", () => {
+    // Drop the project's own package, as in a lockfile of a bare requirements set.
+    const noRoot = text.replace(/\[\[package\]\]\nname = "demo"[\s\S]*?\n\n(?=\[\[package\]\])/, "");
+    expect(noRoot).not.toContain('name = "demo"');
+    const rootless = parseUvLock(noRoot);
+    expect(rootless.find((d) => d.name === "urllib3")).toMatchObject({ direct: false, via: ["requests"] });
+    expect(rootless.some((d) => d.direct)).toBe(false);
+  });
+
   it("omits the project's own package", () => {
     expect(deps.find((d) => d.name === "demo")).toBeUndefined();
   });
