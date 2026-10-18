@@ -46,13 +46,17 @@ interface BatchResult {
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** Parses Retry-After (delta-seconds or HTTP date) into milliseconds. */
+/** Longest wait a server's Retry-After can impose, so a hostile or broken header cannot stall a scan. */
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/** Parses Retry-After (delta-seconds or HTTP date) into milliseconds, capped at MAX_RETRY_AFTER_MS. */
 function retryAfterMs(header: string | null): number | undefined {
   if (!header) return undefined;
+  const clamp = (ms: number) => Math.min(MAX_RETRY_AFTER_MS, Math.max(0, ms));
   const secs = Number(header);
-  if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+  if (Number.isFinite(secs)) return clamp(secs * 1000);
   const at = Date.parse(header);
-  return Number.isNaN(at) ? undefined : Math.max(0, at - Date.now());
+  return Number.isNaN(at) ? undefined : clamp(at - Date.now());
 }
 
 export class OsvClient {

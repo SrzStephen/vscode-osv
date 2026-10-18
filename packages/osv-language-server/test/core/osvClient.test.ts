@@ -89,6 +89,15 @@ describe("OsvClient.queryBatch", () => {
     expect(sleeps[0]).toBeLessThanOrEqual(5000);
   });
 
+  it("caps Retry-After at 60 seconds (delta-seconds and HTTP date)", async () => {
+    fake = await startFakeOsv({ packages: {}, records: {} });
+    fake.failNext(429, 1, "86400");
+    fake.failNext(503, 1, new Date(Date.now() + 3_600_000).toUTCString());
+    const sleeps: number[] = [];
+    await mkClient(fake.url, sleeps).queryBatch([pq("a")]);
+    expect(sleeps).toEqual([60_000, 60_000]);
+  });
+
   it("backs off exponentially with jitter without Retry-After", async () => {
     fake = await startFakeOsv({ packages: {}, records: {} });
     fake.failNext(500, 2);
