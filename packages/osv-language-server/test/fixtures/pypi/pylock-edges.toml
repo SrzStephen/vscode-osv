@@ -1,0 +1,21 @@
+lock-version = "1.0"
+created-by = "hand-built"
+requires-python = ">=3.9"
+
+[[packages]]
+name = "demo"
+directory = { path = ".", editable = true }
+dependencies = [{ name = "requests" }]
+
+[[packages]]
+name = "requests"
+version = "2.25.0"
+dependencies = [{ name = "urllib3" }, { name = "idna", version = "2.10" }]
+
+[[packages]]
+name = "urllib3"
+version = "1.26.20"
+
+[[packages]]
+name = "idna"
+version = "2.10"
