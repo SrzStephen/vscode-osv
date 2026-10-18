@@ -31,5 +31,10 @@ export const DOCUMENT_GLOBS: string[] = [
   "Directory.Packages.props",
   "Directory.Build.props",
   "packages.config",
-  "packages.lock.json"
+  "packages.lock.json",
+  "Gemfile",
+  "gems.rb",
+  "*.gemspec",
+  "Gemfile.lock",
+  "gems.locked"
 ];

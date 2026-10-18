@@ -6,8 +6,9 @@ import { cargoModule } from "./cargo/index.js";
 import { mavenModule } from "./maven/index.js";
 import { goModule } from "./go/index.js";
 import { nugetModule } from "./nuget/index.js";
+import { rubygemsModule } from "./rubygems/index.js";
 
-export const ALL_MODULES: EcosystemModule[] = [npmModule, pypiModule, cargoModule, mavenModule, goModule, nugetModule];
+export const ALL_MODULES: EcosystemModule[] = [npmModule, pypiModule, cargoModule, mavenModule, goModule, nugetModule, rubygemsModule];
 
 /** For tests; replaces any module with the same id. Production modules are appended to ALL_MODULES directly. */
 export function registerModule(m: EcosystemModule): void {

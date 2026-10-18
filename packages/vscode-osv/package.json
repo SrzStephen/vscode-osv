@@ -64,6 +64,11 @@
     "workspaceContains:**/Directory.Build.props",
     "workspaceContains:**/packages.config",
     "workspaceContains:**/packages.lock.json",
+    "workspaceContains:**/Gemfile",
+    "workspaceContains:**/gems.rb",
+    "workspaceContains:**/*.gemspec",
+    "workspaceContains:**/Gemfile.lock",
+    "workspaceContains:**/gems.locked",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"
