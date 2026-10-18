@@ -51,7 +51,12 @@ const isInside = (dir: string, path: string): boolean => {
 
 /** The path of a file: URI; other schemes (untitled, git) are not scanned. */
 function filePath(uri: string): string | undefined {
-  return uri.startsWith("file:") ? fileURLToPath(uri) : undefined;
+  if (!uri.startsWith("file:")) return undefined;
+  try {
+    return fileURLToPath(uri);
+  } catch {
+    return undefined; // malformed file: URI
+  }
 }
 
 export function startServer(connection: Connection, opts: { cacheDir?: string }): void {
@@ -129,16 +134,19 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
     const path = filePath(uri);
     if (!doc || path === undefined) return false;
 
+    // Text and version are captured together: the document may move on while the scan runs.
+    const { version } = doc;
+    const text = doc.getText();
     const controller = new AbortController();
     inFlight.set(uri, controller);
     try {
       const ctx = await contextFor(path, rootFor(path));
-      const result = await scanDocument(uri, path, doc.getText(), ctx, controller.signal);
+      const result = await scanDocument(uri, path, text, ctx, controller.signal);
       if (controller.signal.aborted) return false;
       setOffline(result.offline);
       if (result.parseError) return false;
       store.set(uri, result.findings);
-      scannedVersion.set(uri, doc.version);
+      scannedVersion.set(uri, version);
       publish(uri, result.findings);
       return true;
     } catch (e) {
@@ -174,6 +182,8 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
     const record = override === undefined || override === settings.minimumSeverity;
     const all: Finding[] = [];
     let anyOffline = false;
+    // A document edited (or opened) while this scan runs has a newer scan of its own; this one must not overwrite it.
+    const versionsAtStart = new Map(documents.all().map((d) => [d.uri, d.version]));
     for (const root of roots) {
       const paths = await discoverFiles(root, ALL_MODULES);
       // Ignores come from the root's osv-scanner.toml; the lookup starts from a file directly in the root.
@@ -186,9 +196,10 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
         const uri = pathToFileURL(path).href;
         if (result.parseErrors.some((p) => p.path === path)) continue;
         const findings = result.findings.filter((f) => f.uri === uri);
+        const doc = documents.get(uri);
+        if (doc && doc.version !== versionsAtStart.get(uri)) continue;
         workspaceUris.add(uri);
         store.set(uri, findings);
-        const doc = documents.get(uri);
         if (doc) scannedVersion.set(uri, doc.version);
         publish(uri, findings);
       }
@@ -344,8 +355,22 @@ export function startServer(connection: Connection, opts: { cacheDir?: string })
     }),
   );
 
-  connection.onHover((params) => hoverAt(store.get(params.textDocument.uri), params.position) ?? null);
-  connection.onCodeAction((params) => codeActionsFor(params.textDocument.uri, store.get(params.textDocument.uri), params.range));
+  connection.onHover((params) => {
+    try {
+      return hoverAt(store.get(params.textDocument.uri), params.position) ?? null;
+    } catch (e) {
+      logError("hover", e);
+      return null;
+    }
+  });
+  connection.onCodeAction((params) => {
+    try {
+      return codeActionsFor(params.textDocument.uri, store.get(params.textDocument.uri), params.range);
+    } catch (e) {
+      logError("code action", e);
+      return [];
+    }
+  });
 
   connection.onExecuteCommand(async (params) => {
     try {

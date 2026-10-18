@@ -194,4 +194,39 @@ describe("language server over stdio", { timeout: 30_000 }, () => {
     expect(await server.notification("window/showMessage")).toMatchObject({ message: "lodash is no longer at 4.17.15; the fix was not applied." });
     expect(await findingsOf(server, uri)).toEqual([]);
   });
+
+  it("a malformed file: URI does not crash the server", async () => {
+    const { server, uri, open } = await setup();
+    const bad = "file:///a%2Fb/package.json";
+    await server.conn.sendNotification("textDocument/didOpen", { textDocument: { uri: bad, languageId: "json", version: 1, text: PACKAGE_JSON } });
+    await open();
+    expect((await server.diagnostics(uri))[0]).toMatchObject({ code: GHSA });
+  });
+
+  it("hover and code action failures return a normal response", async () => {
+    const { server, uri, open } = await setup();
+    await open();
+    await server.diagnostics(uri);
+    // A null position/range makes the feature code throw for a document that has findings.
+    expect(await server.conn.sendRequest("textDocument/hover", { textDocument: { uri }, position: null })).toBeNull();
+    expect(await server.conn.sendRequest("textDocument/codeAction", { textDocument: { uri }, range: null, context: { diagnostics: [] } })).toEqual([]);
+    expect(await server.conn.sendRequest("textDocument/hover", { textDocument: { uri }, position: LODASH_POS })).not.toBeNull();
+  });
+
+  it("a workspace scan does not overwrite a newer open-document scan", async () => {
+    const fake = await startFakeOsv({ packages: { "npm|lodash|4.17.15": [GHSA] }, records: { [GHSA]: record } }, { batchDelayMs: 1000 });
+    cleanups.push(() => fake.close());
+    const { server, uri, open } = await setup({ lockfile: false, fake });
+    await open();
+    const scan = server.conn.sendRequest("workspace/executeCommand", { command: "osv.scanWorkspace", arguments: [{}] }) as Promise<Finding[]>;
+    await sleep(300);
+    await server.conn.sendNotification("textDocument/didChange", {
+      textDocument: { uri, version: 2 },
+      contentChanges: [{ text: PACKAGE_JSON.replace("4.17.15", "4.17.21") }],
+    });
+    const key = (await scan).find((f) => f.uri === uri)!.key;
+    // The workspace scan read version 1; it must not mark the stored findings as current for version 2.
+    await server.conn.sendRequest("workspace/executeCommand", { command: "osv.update", arguments: [{ uri, key }] });
+    expect(server.appliedEdits).toEqual([]);
+  });
 });
