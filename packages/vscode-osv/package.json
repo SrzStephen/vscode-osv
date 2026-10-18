@@ -79,6 +79,8 @@
     "workspaceContains:**/pubspec.lock",
     "workspaceContains:**/mix.exs",
     "workspaceContains:**/mix.lock",
+    "workspaceContains:**/Package.swift",
+    "workspaceContains:**/Package.resolved",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"

@@ -46,5 +46,7 @@ export const DOCUMENT_GLOBS: string[] = [
   "pubspec.yaml",
   "pubspec.lock",
   "mix.exs",
-  "mix.lock"
+  "mix.lock",
+  "Package.swift",
+  "Package.resolved"
 ];
