@@ -1,4 +1,5 @@
 import { compare, satisfies, valid } from "@renovatebot/pep440";
+import semver from "semver";
 import type { RewriteResult } from "../types.js";
 import { clauseFloor, parseClauses, type Clause } from "./requirement.js";
 
@@ -78,4 +79,15 @@ export function rewritePep440Spec(raw: string, target: string): RewriteResult {
   }
   if (floor < 0) kept.unshift(`>=${target}`);
   return { spec: kept.join(",").trim(), widened };
+}
+
+/** Rewrites a Poetry constraint, keeping a single `^`, `~`, bare, `>=` or `==` style; ranges follow PEP 440. */
+export function rewritePoetrySpec(raw: string, target: string): RewriteResult {
+  const m = /^\s*(\^|~(?!=)|>=|==)?\s*(\d[\w.+-]*)\s*$/.exec(raw);
+  if (!m) return rewritePep440Spec(raw, target);
+  const op = m[1] ?? "";
+  // Caret and tilde cap the version, so a target outside the old cap widens the constraint.
+  const capped = op === "^" || op === "~";
+  const widened = capped && !semver.satisfies(target, `${op}${m[2]}`, { loose: true });
+  return { spec: `${op}${target}`, widened };
 }

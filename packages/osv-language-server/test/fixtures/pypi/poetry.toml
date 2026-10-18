@@ -1,0 +1,8 @@
+[tool.poetry.dependencies]
+python = "^3.9"
+flask = "^2.0.0"
+django = { version = "~3.2" }
+mylib = { git = "https://github.com/x/mylib.git" }
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=6.0"

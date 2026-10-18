@@ -1,0 +1,14 @@
+[project]
+name = "demo"
+dependencies = [
+  "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==7.0"]
+
+[dependency-groups]
+dev = ["ruff>=0.1.0", {include-group = "test"}]
+
+[tool.uv]
+dev-dependencies = ["black>=22.1.0"]
