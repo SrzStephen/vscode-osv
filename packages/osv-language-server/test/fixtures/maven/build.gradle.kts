@@ -1,0 +1,13 @@
+// implementation("org.example:line-comment:1.0")
+val jacksonVersion = "2.9.8"
+
+dependencies {
+    /* implementation("org.example:block-comment:1.0") */
+    implementation("org.slf4j:slf4j-api:1.7.30")
+    api(group = "org.apache.commons", name = "commons-lang3", version = "3.12.0")
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:2.5.0"))
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation(libs.jackson.databind)
+    implementation(libs.bundles.testing)
+    implementation(project(":other"))
+}
