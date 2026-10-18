@@ -3,8 +3,9 @@ import type { EcosystemModule } from "./types.js";
 import { npmModule } from "./npm/index.js";
 import { pypiModule } from "./pypi/index.js";
 import { cargoModule } from "./cargo/index.js";
+import { mavenModule } from "./maven/index.js";
 
-export const ALL_MODULES: EcosystemModule[] = [npmModule, pypiModule, cargoModule];
+export const ALL_MODULES: EcosystemModule[] = [npmModule, pypiModule, cargoModule, mavenModule];
 
 /** For tests; replaces any module with the same id. Production modules are appended to ALL_MODULES directly. */
 export function registerModule(m: EcosystemModule): void {
