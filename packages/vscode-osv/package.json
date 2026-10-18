@@ -69,6 +69,8 @@
     "workspaceContains:**/*.gemspec",
     "workspaceContains:**/Gemfile.lock",
     "workspaceContains:**/gems.locked",
+    "workspaceContains:**/composer.json",
+    "workspaceContains:**/composer.lock",
     "onLanguage:json",
     "onLanguage:toml",
     "onLanguage:pip-requirements"

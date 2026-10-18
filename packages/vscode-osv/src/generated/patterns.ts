@@ -36,5 +36,7 @@ export const DOCUMENT_GLOBS: string[] = [
   "gems.rb",
   "*.gemspec",
   "Gemfile.lock",
-  "gems.locked"
+  "gems.locked",
+  "composer.json",
+  "composer.lock"
 ];

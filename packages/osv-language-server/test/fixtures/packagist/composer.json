@@ -1,0 +1,14 @@
+{
+  "name": "acme/app",
+  "require": {
+    "php": "^8.0",
+    "ext-json": "*",
+    "Guzzlehttp/Guzzle": "^7.4",
+    "acme/edge": "dev-main",
+    "acme/snapshot": "1.0.x-dev"
+  },
+  "require-dev": {
+    "composer-runtime-api": "^2.0",
+    "phpunit/phpunit": "^9.5"
+  }
+}
