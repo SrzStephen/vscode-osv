@@ -34,6 +34,19 @@ describe("discoverFiles", () => {
     const found = await discoverFiles(root, ALL_MODULES, { exclude: ["svc"] });
     expect(found).toEqual([join(root, "package.json")]);
   });
+
+  it("a pattern without a slash excludes that name at any depth", async () => {
+    mkdirSync(join(root, "packages", "a", "legacy"), { recursive: true });
+    writeFileSync(join(root, "packages", "a", "legacy", "package.json"), "{}");
+    const found = await discoverFiles(root, ALL_MODULES, { exclude: ["legacy"] });
+    expect(found).not.toContain(join(root, "packages", "a", "legacy", "package.json"));
+    expect(found).toHaveLength(2);
+  });
+
+  it("a pattern with a slash stays anchored to the root", async () => {
+    const found = await discoverFiles(root, ALL_MODULES, { exclude: ["svc/**"] });
+    expect(found).toEqual([join(root, "package.json")]);
+  });
 });
 
 describe("scanFiles", () => {
@@ -58,6 +71,20 @@ describe("scanFiles", () => {
     const r = await scanFiles(paths, ctx);
     expect(calls).toHaveLength(1);
     expect(calls[0]!.map((q) => `${q.ecosystem}|${q.name}`).sort()).toEqual(["PyPI|flask", "PyPI|requests", "npm|lodash"]);
-    expect(r).toEqual({ findings: [], offline: true });
+    expect(r).toEqual({ findings: [], offline: true, parseErrors: [] });
+  });
+
+  it("reports corrupt manifests in parseErrors without throwing", async () => {
+    writeFileSync(join(root, "package.json"), "{nope");
+    const ctx: ScanContext = {
+      files: nodeFileSource,
+      osv: { lookup: async () => ({ results: new Map(), offline: false, skipped: [] }) },
+      settings: DEFAULT_SETTINGS,
+      ignores: new IgnoreMatcher([], [], new Date()),
+      rootDir: root,
+    };
+    const r = await scanFiles([join(root, "package.json"), join(root, "missing", "package.json")], ctx);
+    expect(r.parseErrors.map((e) => e.path)).toEqual([join(root, "package.json"), join(root, "missing", "package.json")]);
+    expect(r.parseErrors[1]!.message).toBe("unreadable");
   });
 });

@@ -12,7 +12,11 @@ const SKIPPED_DIRS = new Set(["node_modules", "target", "vendor", ".git", "dist"
 
 /** Finds every manifest and lockfile under rootDir, as absolute paths. */
 export async function discoverFiles(rootDir: string, modules: EcosystemModule[], opts: { exclude?: string[] } = {}): Promise<string[]> {
-  const isExcluded = picomatch(opts.exclude ?? [], { dot: true });
+  // gitignore-style: a pattern without "/" matches that name at any depth; one with "/" is anchored to the root.
+  const isExcluded = picomatch(
+    (opts.exclude ?? []).map((g) => (g.includes("/") ? g : `**/${g}`)),
+    { dot: true },
+  );
   const found: string[] = [];
 
   async function walk(dir: string): Promise<void> {
@@ -32,22 +36,35 @@ export async function discoverFiles(rootDir: string, modules: EcosystemModule[],
   return found;
 }
 
+export interface WorkspaceScanResult {
+  findings: Finding[];
+  offline: boolean;
+  /** Files that could not be read or parsed, so a corrupt manifest does not look clean. */
+  parseErrors: { path: string; message: string }[];
+}
+
 /** Scans many files with a single batched OSV lookup. */
-export async function scanFiles(paths: string[], ctx: ScanContext): Promise<{ findings: Finding[]; offline: boolean }> {
+export async function scanFiles(paths: string[], ctx: ScanContext): Promise<WorkspaceScanResult> {
   const prepared: PreparedScan[] = [];
+  const parseErrors: WorkspaceScanResult["parseErrors"] = [];
   for (const path of paths) {
     const text = await ctx.files.read(path);
-    if (text === undefined) continue;
+    if (text === undefined) {
+      parseErrors.push({ path, message: "unreadable" });
+      continue;
+    }
     const scan = await prepareDocument(pathToFileURL(path).href, path, text, ctx);
-    if (scan && !("parseError" in scan)) prepared.push(scan);
+    if (!scan) continue;
+    if ("parseError" in scan) parseErrors.push({ path, message: "failed to parse" });
+    else prepared.push(scan);
   }
 
   const queries = new Map<string, PackageQuery>();
   for (const scan of prepared) {
     for (const q of scan.queries) queries.set(queryKey(q), q);
   }
-  if (queries.size === 0) return { findings: [], offline: false };
+  if (queries.size === 0) return { findings: [], offline: false, parseErrors };
 
   const outcome = await ctx.osv.lookup([...queries.values()]);
-  return { findings: prepared.flatMap((scan) => scan.finalize(outcome.results)), offline: outcome.offline };
+  return { findings: prepared.flatMap((scan) => scan.finalize(outcome.results)), offline: outcome.offline, parseErrors };
 }
