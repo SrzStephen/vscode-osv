@@ -9,12 +9,12 @@
   "scripts": {
     "test": "vitest run",
     "test:canary": "vitest run --config vitest.canary.config.ts",
-    "release:prepare": "node scripts/release-prepare.mjs",
-    "typecheck": "tsc -p packages/osv-language-server --noEmit && tsc -p packages/vscode-osv --noEmit",
+    "release:prepare": "node --import tsx scripts/release-prepare.ts",
+    "typecheck": "tsc -p packages/osv-language-server --noEmit && tsc -p packages/vscode-osv --noEmit && tsc -p tsconfig.tooling.json",
     "lint": "eslint .",
     "build": "npm run build --workspaces",
-    "sync-patterns": "node --import tsx scripts/sync-patterns.mjs",
-    "check-patterns": "node --import tsx scripts/sync-patterns.mjs --check"
+    "sync-patterns": "node --import tsx scripts/sync-patterns.ts",
+    "check-patterns": "node --import tsx scripts/sync-patterns.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -23,6 +23,7 @@
     "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.13.0",
+    "jiti": "^2.7.0",
     "ovsx": "^1.3.0",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",

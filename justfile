@@ -89,7 +89,7 @@ scan *paths=".": build
 
 # Bump both package versions and the pre-commit pin to X.Y.Z. Edits files only; review and commit by hand
 release-prepare version:
-    node scripts/release-prepare.mjs {{version}}
+    node --import tsx scripts/release-prepare.ts {{version}}
 
 # Remove build output, packaged VSIX files, and scratch fixture copies from `just vscode`
 clean:

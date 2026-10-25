@@ -184,9 +184,9 @@
     }
   },
   "scripts": {
-    "build": "node build.mjs",
-    "test:integration": "node build.mjs --test && node dist/test/runTest.js",
-    "package": "node build.mjs && vsce package --no-dependencies"
+    "build": "node --import tsx build.mts",
+    "test:integration": "node --import tsx build.mts --test && node dist/test/runTest.js",
+    "package": "node --import tsx build.mts && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

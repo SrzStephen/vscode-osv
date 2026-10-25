@@ -1,14 +1,14 @@
-import { build } from "esbuild";
+import { build, type BuildOptions } from "esbuild";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const dir = fileURLToPath(new URL(".", import.meta.url));
 const serverDir = fileURLToPath(new URL("../osv-language-server/", import.meta.url));
-const common = { bundle: true, platform: "node", target: "node20", format: "cjs", logLevel: "info" };
+const common = { bundle: true, platform: "node", target: "node20", format: "cjs", logLevel: "info" } satisfies BuildOptions;
 
 // The VSIX bundles the language server; build it fresh and copy it next to the extension.
-execFileSync(process.execPath, [`${serverDir}build.mjs`], { stdio: "inherit" });
+execFileSync(process.execPath, ["--import", "tsx", `${serverDir}build.mts`], { stdio: "inherit" });
 mkdirSync(`${dir}dist`, { recursive: true });
 copyFileSync(`${serverDir}dist/server.js`, `${dir}dist/server.js`);
 

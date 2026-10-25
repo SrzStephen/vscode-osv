@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Usage: npm run release:prepare -- X.Y.Z   (or: node scripts/release-prepare.mjs X.Y.Z)
+// Usage: npm run release:prepare -- X.Y.Z   (or: node scripts/release-prepare.ts X.Y.Z)
 // Bumps both packages' versions and the additional_dependencies pin in
 // .pre-commit-hooks.yaml. It only edits files; it never commits, tags or publishes.
 // All input is validated and all targets are checked before anything is written.
@@ -14,7 +14,7 @@ if (process.argv.length !== 3 || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.t
 }
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const edits = [];
+const edits: [path: string, content: string, label: string][] = [];
 
 for (const pkg of ["packages/osv-language-server/package.json", "packages/vscode-osv/package.json"]) {
   const path = join(root, pkg);
