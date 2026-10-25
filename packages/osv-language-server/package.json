@@ -21,7 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node --import tsx build.mts"
   },
   "dependencies": {
     "@renovatebot/pep440": "^5.0.1",
