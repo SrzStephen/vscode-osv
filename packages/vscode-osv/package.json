@@ -100,17 +100,37 @@
     "commands": [
       {
         "command": "osv.scanWorkspaceUi",
-        "title": "OSV: Scan workspace"
+        "title": "Scan workspace",
+        "category": "OSV",
+        "icon": "$(search)"
       },
       {
         "command": "osv.clearCacheUi",
-        "title": "OSV: Clear cache and rescan"
+        "title": "Clear cache and rescan",
+        "category": "OSV",
+        "icon": "$(refresh)"
       },
       {
         "command": "osv.showLog",
-        "title": "OSV: Show output log"
+        "title": "Show output log",
+        "category": "OSV",
+        "icon": "$(output)"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "osv.scanWorkspaceUi",
+          "when": "osv.activeFileScanned",
+          "group": "navigation@90"
+        },
+        {
+          "command": "osv.clearCacheUi",
+          "when": "osv.activeFileScanned",
+          "group": "navigation@91"
+        }
+      ]
+    },
     "configuration": {
       "title": "OSV",
       "properties": {

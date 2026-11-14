@@ -17,7 +17,17 @@ import {
   type SuggestLockCommandParams,
 } from "./commandRunner.js";
 import { trustHover } from "./hoverTrust.js";
-import { DOCUMENT_GLOB, isOsvFile, statusBarText } from "./statusBar.js";
+import {
+  DOCUMENT_GLOB,
+  emptyCounts,
+  isAlarming,
+  isOsvFile,
+  severityOf,
+  severitySummary,
+  statusBarText,
+  totalOf,
+  type StatusState,
+} from "./statusBar.js";
 
 export interface OsvApi {
   statusBarText(): string;
@@ -72,6 +82,18 @@ async function addIgnore(id: string): Promise<void> {
   if (next) await config.update("ignoredVulnerabilities", next, vscode.ConfigurationTarget.Workspace);
 }
 
+function statusTooltip(state: StatusState): vscode.MarkdownString {
+  const md = new vscode.MarkdownString(undefined, true);
+  md.isTrusted = { enabledCommands: ["osv.scanWorkspaceUi", "osv.clearCacheUi", "osv.showLog"] };
+  md.appendMarkdown("**OSV Vulnerabilities**\n\n");
+  if (state.scanning) md.appendMarkdown("Scanning the workspace…\n\n");
+  else if (state.offline) md.appendMarkdown("osv.dev is unreachable; showing cached results.\n\n");
+  else if (totalOf(state.counts) === 0) md.appendMarkdown("No known vulnerabilities in this file.\n\n");
+  else md.appendMarkdown(`${severitySummary(state.counts)} in this file.\n\n`);
+  md.appendMarkdown("[$(search) Scan workspace](command:osv.scanWorkspaceUi) · [$(refresh) Rescan](command:osv.clearCacheUi) · [$(output) Log](command:osv.showLog)");
+  return md;
+}
+
 export function activate(context: vscode.ExtensionContext): OsvApi {
   const serverModule = context.asAbsolutePath("dist/server.js");
   const proxy = vscode.workspace.getConfiguration("http").get<string>("proxy");
@@ -94,16 +116,26 @@ export function activate(context: vscode.ExtensionContext): OsvApi {
   item.command = "workbench.actions.view.problems";
   item.name = "OSV";
   let offline = false;
+  let scanning = 0;
   const refresh = () => {
     const doc = vscode.window.activeTextEditor?.document;
-    const text =
-      doc &&
-      statusBarText({
-        matching: doc.uri.scheme === "file" && isOsvFile(doc.uri.fsPath),
-        vulnerable: vscode.languages.getDiagnostics(doc.uri).filter((d) => d.source === "osv").length,
-        offline,
-      });
+    const counts = emptyCounts();
+    if (doc) {
+      for (const d of vscode.languages.getDiagnostics(doc.uri)) {
+        if (d.source === "osv") counts[severityOf((d as { data?: unknown }).data)]++;
+      }
+    }
+    const state: StatusState = {
+      matching: !!doc && doc.uri.scheme === "file" && isOsvFile(doc.uri.fsPath),
+      counts,
+      offline,
+      scanning: scanning > 0,
+    };
+    void vscode.commands.executeCommand("setContext", "osv.activeFileScanned", state.matching);
+    const text = statusBarText(state);
     item.text = text ?? "";
+    item.backgroundColor = isAlarming(state) ? new vscode.ThemeColor("statusBarItem.errorBackground") : undefined;
+    item.tooltip = text ? statusTooltip(state) : undefined;
     if (text) item.show();
     else item.hide();
   };
@@ -128,9 +160,16 @@ export function activate(context: vscode.ExtensionContext): OsvApi {
     item,
     vscode.languages.onDidChangeDiagnostics(refresh),
     vscode.window.onDidChangeActiveTextEditor(refresh),
-    uiCommand("osv.scanWorkspaceUi", () =>
-      vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "OSV: scanning workspace" }, () => serverCommand("osv.scanWorkspace")),
-    ),
+    uiCommand("osv.scanWorkspaceUi", async () => {
+      scanning++;
+      refresh();
+      try {
+        await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: "OSV: scanning workspace" }, () => serverCommand("osv.scanWorkspace"));
+      } finally {
+        scanning--;
+        refresh();
+      }
+    }),
     uiCommand("osv.clearCacheUi", () => serverCommand("osv.clearCache")),
     vscode.commands.registerCommand("osv.showLog", () => languageClient.outputChannel.show()),
   );

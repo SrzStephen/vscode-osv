@@ -51,7 +51,7 @@ suite("OSV extension smoke test", () => {
     );
     assert.strictEqual(doc.getText(diagnostic.range), "^4.17.15");
     await eventually("the status bar to report one vulnerable dependency", () =>
-      api.statusBarText() === "$(shield) OSV: 1 vulnerable" ? true : undefined,
+      /^\$\(shield\) OSV: 1 (critical|high|medium|low)$/.test(api.statusBarText()) ? true : undefined,
     );
 
     const hovers = await vscode.commands.executeCommand<vscode.Hover[]>("vscode.executeHoverProvider", uri, diagnostic.range.start);
