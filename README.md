@@ -125,3 +125,7 @@ npm run lint
 npm run typecheck
 scripts/test-precommit.sh     # needs the pre-commit tool and network access
 ```
+
+## License
+
+[MIT](LICENSE)

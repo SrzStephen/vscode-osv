@@ -25,7 +25,7 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
       `packages/vscode-osv/package.json` (currently the placeholder `osv-vscode`).
 - [ ] Decide on the npm package name/scope for `osv-language-server`, remove `"private": true`
       from `packages/osv-language-server/package.json`, and add `repository` (needed for
-      `--provenance`).
+      `--provenance`). (`license` and the LICENSE files are done.)
 - [ ] Set up OIDC publishing (no long-lived `VSCE_PAT` or `NPM_TOKEN`):
   - Create a GitHub environment named `release` (optionally with required reviewers). The
     publish job runs in it.

@@ -3,6 +3,7 @@
   "displayName": "OSV Vulnerabilities",
   "description": "Highlights known vulnerabilities (OSV.dev) in dependency manifests and lockfiles, with one-click fixes.",
   "version": "0.1.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/SrzStephen/vscode-osv.git",
