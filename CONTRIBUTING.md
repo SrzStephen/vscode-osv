@@ -38,8 +38,14 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
     a Contributor on the Marketplace publisher (Members page). Save the app's client ID and
     tenant ID as the `release` environment variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`
     (they are not secrets).
-  - **Open VSX:** has no OIDC. Create the namespace, then store a token as the `release`
-    environment secret `OVSX_PAT`.
+  - **Open VSX** (open-vsx.org) has no OIDC, so it uses a token:
+    1. Sign in with GitHub, link an Eclipse Foundation account and sign the Publisher
+       Agreement (publishing is refused without it).
+    2. Create an access token under your profile's Settings > Access Tokens.
+    3. Create the namespace once, matching `publisher` in `packages/vscode-osv/package.json`:
+       `npx ovsx create-namespace <publisher> -p <token>`. Optionally claim ownership of it
+       through the Open VSX GitHub issue process so it shows as verified.
+    4. Store the token as the `release` environment secret `OVSX_PAT`.
 - [ ] Replace the placeholder `packages/vscode-osv/icon.png` with the real icon.
 
 ### Each release
