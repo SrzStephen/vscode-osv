@@ -14,20 +14,38 @@ npm run test:canary                      # live api.osv.dev check; not part of `
 ## Release checklist
 
 Nothing is published automatically from a branch; publishing happens only from the
-`release.yml` workflow, on a pushed `v*` tag. Never run `vsce publish`, `ovsx publish` or
-`npm publish` by hand.
+`release.yml` workflow, on a pushed `v*` tag. Apart from the one-time npm bootstrap below,
+never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 ### Open decisions (spec section 18) - resolve before the first release
 
-- [ ] Choose the GitHub org/repo (`<github-org>/vscode-osv`). It is used in the pre-commit
-      `repo:` URL in the README and docs, and in the packages' `repository` fields.
-- [ ] Choose the Marketplace publisher ID (`<marketplace-publisher>`) and set `publisher` in
-      `packages/vscode-osv/package.json` (currently the placeholder `osv-vscode`).
-- [ ] Decide on the npm package name/scope for `osv-language-server`, remove `"private": true`
-      from `packages/osv-language-server/package.json`, and add `repository` (needed for
-      `--provenance`).
-- [ ] Create the repository secrets `VSCE_PAT`, `OVSX_PAT` and `NPM_TOKEN`.
-- [ ] Replace the placeholder `packages/vscode-osv/icon.png` with the real icon.
+- [x] GitHub repo: `SrzStephen/vscode-osv`. It is used in the pre-commit `repo:` URL in the
+      docs and in the packages' `repository` fields.
+- [x] Marketplace publisher ID is `srzstephen` (set in `packages/vscode-osv/package.json`).
+      Create that publisher on the Marketplace and the same namespace on Open VSX.
+- [x] npm package `osv-language-server` (unscoped; name was free when checked). `private` is
+      removed and `repository` and `license` are set.
+- [ ] Set up OIDC publishing (no long-lived `VSCE_PAT` or `NPM_TOKEN`):
+  - Create a GitHub environment named `release` (optionally with required reviewers). The
+    publish job runs in it.
+  - **npm:** publish `osv-language-server` once by hand to create the package (use a
+    short-lived token and revoke it afterwards; this is the only manual publish), then on
+    npmjs.com open the package's Settings > Trusted Publisher and enter the GitHub org/repo,
+    workflow `release.yml` and environment `release`.
+  - **VS Code Marketplace:** register a Microsoft Entra app, add a federated credential with
+    subject `repo:SrzStephen/vscode-osv:environment:release`, and add its service principal as
+    a Contributor on the Marketplace publisher (Members page). Save the app's client ID and
+    tenant ID as the `release` environment variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`
+    (they are not secrets).
+  - **Open VSX** (open-vsx.org) has no OIDC, so it uses a token:
+    1. Sign in with GitHub, link an Eclipse Foundation account and sign the Publisher
+       Agreement (publishing is refused without it).
+    2. Create an access token under your profile's Settings > Access Tokens.
+    3. Create the namespace once, matching `publisher` in `packages/vscode-osv/package.json`:
+       `npx ovsx create-namespace <publisher> -p <token>`. Optionally claim ownership of it
+       through the Open VSX GitHub issue process so it shows as verified.
+    4. Store the token as the `release` environment secret `OVSX_PAT`.
+- [x] Icon replaced (`packages/vscode-osv/icon.png`).
 
 ### Each release
 

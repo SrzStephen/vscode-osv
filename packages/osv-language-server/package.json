@@ -1,7 +1,16 @@
 {
   "name": "osv-language-server",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SrzStephen/vscode-osv.git",
+    "directory": "packages/osv-language-server"
+  },
+  "homepage": "https://github.com/SrzStephen/vscode-osv/tree/main/packages/osv-language-server#readme",
+  "bugs": {
+    "url": "https://github.com/SrzStephen/vscode-osv/issues"
+  },
   "keywords": [
     "osv",
     "vulnerability",
