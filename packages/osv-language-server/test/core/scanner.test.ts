@@ -3,9 +3,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../src/core/ignores.js";
 import { findingKey } from "../../src/core/findingKey.js";
-import { scanDocument, type ScanContext } from "../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../src/core/scanner.js";
 import { DEFAULT_SETTINGS, type Settings } from "../../src/core/settings.js";
 import type { OsvRecord, PackageQuery } from "../../src/core/types.js";
+import { memFs, posixResult } from "../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixture = (id: string): OsvRecord => JSON.parse(readFileSync(join(__dirname, "..", "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
 const lodashRecords = (): OsvRecord[] => ["GHSA-35jh-r3h4-6jhm", "GHSA-29mw-wpgm-hmr9", "GHSA-p6mc-m468-83gw"].map(fixture);
@@ -27,7 +31,7 @@ interface CtxOpts {
 
 function ctx(files: Record<string, string> = {}, opts: CtxOpts = {}): ScanContext {
   return {
-    files: { read: async (p) => files[p], list: async () => [] },
+    files: memFs(files),
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();

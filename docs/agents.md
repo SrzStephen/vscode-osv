@@ -15,7 +15,7 @@ npx --yes osv-language-server --stdio
 - Transport: stdio (`--stdio`). `--node-ipc` is also supported.
 - Optional: `--cache-dir <dir>` (or `--cache-dir=<dir>`) overrides the cache location. The
   `cacheDir` initialization option does the same and wins over the command-line flag.
-- Requires Node 20 or later. The server only reads workspace files and calls the OSV API; it
+- Requires Node 22 or later. The server only reads workspace files and calls the OSV API; it
   never executes processes.
 
 Files handled: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,

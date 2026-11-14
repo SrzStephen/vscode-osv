@@ -3,11 +3,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../../src/core/ignores.js";
 import { LineIndex } from "../../../src/core/lineIndex.js";
-import { scanDocument, type ScanContext } from "../../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../../src/core/settings.js";
 import type { OsvRecord, PackageQuery, TextRange } from "../../../src/core/types.js";
 import { ALL_MODULES, classifyFile } from "../../../src/ecosystems/index.js";
 import { goModule } from "../../../src/ecosystems/go/index.js";
+import { memFs, posixResult } from "../../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixtures = join(__dirname, "..", "..", "fixtures");
 const records = (): OsvRecord[] =>
@@ -15,7 +19,7 @@ const records = (): OsvRecord[] =>
 
 function ctx(files: Record<string, string>): ScanContext {
   return {
-    files: { read: async (p) => files[p], list: async () => [] },
+    files: memFs(files),
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();

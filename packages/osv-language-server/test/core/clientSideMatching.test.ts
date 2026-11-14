@@ -4,13 +4,17 @@ import { Agent } from "undici";
 import { afterEach, describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../src/core/ignores.js";
 import { OsvClient } from "../../src/core/osvClient.js";
-import { scanDocument, type ScanContext } from "../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../src/core/settings.js";
 import type { DeclaredDep, OsvRecord, PackageQuery, ResolvedDep, TextRange } from "../../src/core/types.js";
 import type { EcosystemModule } from "../../src/ecosystems/types.js";
 import { npmModule } from "../../src/ecosystems/npm/index.js";
 import { semverLooseComparator } from "../../src/versioning/semverLoose.js";
 import { startFakeOsv } from "../helpers/fakeOsv.js";
+import { posixResult } from "../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixture = (id: string): OsvRecord => JSON.parse(readFileSync(join(__dirname, "..", "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
 const r = (line: number, a: number, b: number): TextRange => ({ start: { line, character: a }, end: { line, character: b } });

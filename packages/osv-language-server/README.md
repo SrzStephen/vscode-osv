@@ -18,7 +18,7 @@ npx --yes osv-language-server --stdio
 npx --yes --package osv-language-server osv-check --min-severity high
 ```
 
-Requires Node 20 or later.
+Requires Node 22 or later.
 
 ## Documentation
 

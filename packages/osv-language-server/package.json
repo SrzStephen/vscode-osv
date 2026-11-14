@@ -20,7 +20,7 @@
     "language-server"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "osv-language-server": "dist/server.js",

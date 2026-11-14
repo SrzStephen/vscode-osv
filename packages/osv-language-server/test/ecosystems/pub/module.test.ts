@@ -2,11 +2,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../../src/core/ignores.js";
-import { scanDocument, type ScanContext } from "../../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../../src/core/settings.js";
 import type { OsvRecord, PackageQuery } from "../../../src/core/types.js";
 import { ALL_MODULES, classifyFile } from "../../../src/ecosystems/index.js";
 import { pubModule } from "../../../src/ecosystems/pub/index.js";
+import { memFs, posixResult } from "../../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixtures = join(__dirname, "..", "..", "fixtures");
 const read = (...p: string[]): string => readFileSync(join(fixtures, ...p), "utf8");
@@ -14,10 +18,7 @@ const records = (): OsvRecord[] => [JSON.parse(read("osv", "GHSA-4rgh-jx4f-qfcq.
 
 function ctx(files: Record<string, string>, queried: PackageQuery[] = []): ScanContext {
   return {
-    files: {
-      read: async (p) => files[p],
-      list: async (d) => Object.keys(files).filter((f) => f.startsWith(`${d}/`) && !f.slice(d.length + 1).includes("/")).map((f) => f.slice(d.length + 1)),
-    },
+    files: memFs(files),
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();

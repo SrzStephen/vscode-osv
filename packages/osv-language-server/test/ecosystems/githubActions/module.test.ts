@@ -2,11 +2,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../../src/core/ignores.js";
-import { scanDocument, type ScanContext } from "../../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../../src/core/settings.js";
 import type { OsvRecord, PackageQuery } from "../../../src/core/types.js";
 import { ALL_MODULES, classifyFile } from "../../../src/ecosystems/index.js";
 import { githubActionsModule } from "../../../src/ecosystems/githubActions/index.js";
+import { posixResult } from "../../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixtures = join(__dirname, "..", "..", "fixtures");
 const records = (): OsvRecord[] => ["GHSA-mrrh-fwg8-r2c3", "GHSA-mcph-m25j-8j63"].map((id) => JSON.parse(readFileSync(join(fixtures, "osv", `${id}.json`), "utf8")) as OsvRecord);

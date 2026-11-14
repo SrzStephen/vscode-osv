@@ -3,11 +3,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../../src/core/ignores.js";
 import { LineIndex } from "../../../src/core/lineIndex.js";
-import { scanDocument, type ScanContext } from "../../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../../src/core/scanner.js";
 import { DEFAULT_SETTINGS } from "../../../src/core/settings.js";
 import type { OsvRecord, PackageQuery, TextRange } from "../../../src/core/types.js";
 import { ALL_MODULES, classifyFile } from "../../../src/ecosystems/index.js";
 import { mavenModule } from "../../../src/ecosystems/maven/index.js";
+import { memFs, posixResult } from "../../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixtures = join(__dirname, "..", "..", "fixtures");
 const read = (...p: string[]): string => readFileSync(join(fixtures, ...p), "utf8");
@@ -16,7 +20,7 @@ const log4jRecords = (): OsvRecord[] => LOG4J_IDS.map((id) => JSON.parse(read("o
 
 function ctx(files: Record<string, string>): ScanContext {
   return {
-    files: { read: async (p) => files[p], list: async () => [] },
+    files: memFs(files),
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();
@@ -40,7 +44,7 @@ const apply = (text: string, edit: { range: TextRange; newText: string }): strin
   return text.slice(0, ix.offset(edit.range.start)) + edit.newText + text.slice(ix.offset(edit.range.end));
 };
 
-const filesOf = (files: Record<string, string>) => ({ read: async (p: string) => files[p], list: async () => [] });
+const filesOf = (files: Record<string, string>) => memFs(files);
 
 describe("mavenModule", () => {
   it("is registered and classifies all four manifests and both lockfiles", () => {

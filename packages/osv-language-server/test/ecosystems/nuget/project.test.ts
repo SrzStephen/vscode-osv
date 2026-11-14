@@ -5,6 +5,7 @@ import { LineIndex } from "../../../src/core/lineIndex.js";
 import type { TextRange } from "../../../src/core/types.js";
 import { parsePackagesProps, parseProjectFile, resolveCentralVersions } from "../../../src/ecosystems/nuget/project.js";
 import { ParseError } from "../../../src/ecosystems/types.js";
+import { memFs } from "../../helpers/memFs.js";
 
 const read = (...p: string[]): string => readFileSync(join(__dirname, "..", "..", "fixtures", "nuget", ...p), "utf8");
 const slice = (text: string, r: TextRange): string => {
@@ -74,7 +75,7 @@ describe("resolveCentralVersions", () => {
     "/ws/cpm/Directory.Packages.props": read("cpm", "Directory.Packages.props"),
     "/ws/cpm/src/app/app.csproj": read("cpm", "src", "app", "app.csproj"),
   };
-  const fs = { read: async (p: string) => files[p], list: async () => [] };
+  const fs = memFs(files);
   const ctx = { manifestPath: "/ws/cpm/src/app/app.csproj", rootDir: "/ws", files: fs };
 
   it("fills versions from the nearest Directory.Packages.props, case-insensitively", async () => {
