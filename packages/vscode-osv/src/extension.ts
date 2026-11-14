@@ -17,6 +17,7 @@ import {
   type SuggestLockCommandParams,
 } from "./commandRunner.js";
 import { trustHover } from "./hoverTrust.js";
+import { registerOverview } from "./overviewView.js";
 import {
   DOCUMENT_GLOB,
   emptyCounts,
@@ -113,7 +114,7 @@ export function activate(context: vscode.ExtensionContext): OsvApi {
   const log = (e: unknown) => languageClient.outputChannel.appendLine(`OSV: ${e instanceof Error ? e.message : String(e)}`);
 
   const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-  item.command = "workbench.actions.view.problems";
+  item.command = "osv.overview.focus";
   item.name = "OSV";
   let offline = false;
   let scanning = 0;
@@ -158,6 +159,7 @@ export function activate(context: vscode.ExtensionContext): OsvApi {
 
   context.subscriptions.push(
     item,
+    ...registerOverview(),
     vscode.languages.onDidChangeDiagnostics(refresh),
     vscode.window.onDidChangeActiveTextEditor(refresh),
     uiCommand("osv.scanWorkspaceUi", async () => {
