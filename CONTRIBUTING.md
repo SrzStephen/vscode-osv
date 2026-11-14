@@ -14,8 +14,8 @@ npm run test:canary                      # live api.osv.dev check; not part of `
 ## Release checklist
 
 Nothing is published automatically from a branch; publishing happens only from the
-`release.yml` workflow, on a pushed `v*` tag. Never run `vsce publish`, `ovsx publish` or
-`npm publish` by hand.
+`release.yml` workflow, on a pushed `v*` tag. Apart from the one-time npm bootstrap below,
+never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 ### Open decisions (spec section 18) - resolve before the first release
 
@@ -26,7 +26,20 @@ Nothing is published automatically from a branch; publishing happens only from t
 - [ ] Decide on the npm package name/scope for `osv-language-server`, remove `"private": true`
       from `packages/osv-language-server/package.json`, and add `repository` (needed for
       `--provenance`).
-- [ ] Create the repository secrets `VSCE_PAT`, `OVSX_PAT` and `NPM_TOKEN`.
+- [ ] Set up OIDC publishing (no long-lived `VSCE_PAT` or `NPM_TOKEN`):
+  - Create a GitHub environment named `release` (optionally with required reviewers). The
+    publish job runs in it.
+  - **npm:** publish `osv-language-server` once by hand to create the package (use a
+    short-lived token and revoke it afterwards; this is the only manual publish), then on
+    npmjs.com open the package's Settings > Trusted Publisher and enter the GitHub org/repo,
+    workflow `release.yml` and environment `release`.
+  - **VS Code Marketplace:** register a Microsoft Entra app, add a federated credential with
+    subject `repo:<github-org>/<repo>:environment:release`, and add its service principal as
+    a Contributor on the Marketplace publisher (Members page). Save the app's client ID and
+    tenant ID as the `release` environment variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`
+    (they are not secrets).
+  - **Open VSX:** has no OIDC. Create the namespace, then store a token as the `release`
+    environment secret `OVSX_PAT`.
 - [ ] Replace the placeholder `packages/vscode-osv/icon.png` with the real icon.
 
 ### Each release
