@@ -6,14 +6,16 @@ manifests and lockfiles, with one-click fixes.
 ## Features
 
 - Inline diagnostics on manifests and lockfiles, with severity from CVSS.
-- Hover details and `Update <package> to <version>` quick fixes that preserve your range style.
+- Hover details with a severity badge, the fixing version and an Update link up front, then each advisory with its aliases (CVE IDs).
+- `Update <package> to <version>` quick fixes that preserve your range style.
+- A **Vulnerabilities** view in the activity bar: every vulnerable dependency in the workspace, grouped by file or severity
+  (`osv.overview.groupBy`), with jump-to-line, fix, ignore and open-advisory actions.
 - Offers to refresh the lockfile after a fix (never in Restricted Mode).
-- Status bar: `OSV: N vulnerable`, `OSV: ✓` or `OSV: offline`; click to open the Problems panel.
+- Status bar: a severity breakdown such as `OSV: 1 critical · 1 high`, `OSV: ✓` when clean, `OSV: offline`, and a spinner
+  while scanning; click it to open the Vulnerabilities view.
 - Works offline from a disk cache.
 
-![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/editor.gif)
-
-<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
+![Editor demo: vulnerable dependencies are flagged with a severity breakdown in the status bar, explained in a hover, listed in the Vulnerabilities view and fixed with a quick fix](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/editor.gif)
 
 ## Privacy
 
@@ -34,6 +36,7 @@ manifests and lockfiles, with one-click fixes.
 | `osv.apiBaseUrl` | `"https://api.osv.dev"` | OSV API base (mirror/proxy) |
 | `osv.ignoredVulnerabilities` | `[]` | Vulnerability IDs (any alias) to suppress |
 | `osv.offerLockCommand` | `"ask"` | `ask` \| `always` \| `never` |
+| `osv.overview.groupBy` | `"file"` | Group the Vulnerabilities view by `file` or `severity` |
 
 An `osv-scanner.toml` with `[[IgnoredVulns]]` entries (`id`, optional `ignoreUntil`, `reason`)
 in the workspace root is also honoured.

@@ -4,7 +4,7 @@ A Language Server (LSP) and CLI that report known vulnerabilities from
 [OSV.dev](https://osv.dev) in npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex and Swift dependency manifests and lockfiles, with quick fixes.
 It powers the OSV Vulnerabilities VS Code extension and works with any LSP client.
 
-![osv-check listing four vulnerable dependencies with their fix versions](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/cli.svg)
+![osv-check listing four vulnerable dependencies with their fix versions and a severity breakdown](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/cli.svg)
 
 ## Binaries
 

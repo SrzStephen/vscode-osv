@@ -49,7 +49,11 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 ### Each release
 
-1. Record the README GIFs / screenshots.
+1. Re-record the README media if the UI changed:
+   - `docs/media/editor.gif`: `npm run build -w packages/vscode-osv`, then `scripts/record-demo/record.sh`
+     (runs the real extension on a private virtual display; needs `code`, `xvfb-run`, `ffmpeg`, `python3`, network).
+   - `docs/media/cli.svg`: in a demo project run `osv-check --min-severity high > out.txt`, then
+     `node --import tsx scripts/render-cli-svg.ts out.txt "osv-check --min-severity high" demo-app > docs/media/cli.svg`.
 2. Update `packages/vscode-osv/CHANGELOG.md`.
 3. `npm run release:prepare -- X.Y.Z` bumps both packages' versions and the
    `osv-language-server@X.Y.Z` pin in `.pre-commit-hooks.yaml` (it validates `X.Y.Z` and

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Vulnerabilities view in the activity bar: all findings across the workspace, grouped by file or severity, with jump-to-line, fix, ignore and open-advisory actions.
+- Status bar shows a severity breakdown (`OSV: 1 critical · 1 high`), turns red for critical or high findings, shows a spinner while scanning and links to the view.
+- Hover leads with the fixing version and the Update link, adds an overall severity badge and lists CVE aliases per advisory.
+- Commands are categorised under "OSV" with icons; scan and rescan buttons appear in the editor title bar for scanned files.
+- `osv-check` prints a severity breakdown line after its summary.
+- New setting `osv.overview.groupBy`.
+
 ## 0.1.0
 
 Initial release.

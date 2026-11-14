@@ -18,13 +18,17 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 
 - **Inline diagnostics** on manifests and lockfiles, with severity from CVSS scores
   (critical/high are errors, medium is a warning, low is information).
-- **Hover details** for each vulnerable package: IDs, aliases, severity, summaries, links.
+- **Hover details** for each vulnerable package: severity badge, the version that fixes it with an
+  Update link up front, then each advisory with its aliases (CVE IDs) and summary.
+- **Vulnerabilities view**: an activity-bar tree of every vulnerable dependency in the workspace,
+  grouped by file or by severity. Click to jump to the line, or fix, ignore or open the advisory inline.
 - **One-click fixes**: update a dependency to the lowest version that fixes the vulnerabilities,
   with the manifest edit preserving your range style (`^`, `~`, `>=`, ...). Transitive
   dependencies are fixed with overrides/resolutions where the package manager supports them.
 - **Lockfile refresh**: after a fix, offers to run the right command (`npm install`,
   `uv lock`, ...) in a visible terminal. Disabled in Restricted Mode.
-- **Status bar**: `OSV: N vulnerable` / `OSV: ✓` / `OSV: offline` for the active editor.
+- **Status bar**: a severity breakdown for the active file (`OSV: 1 critical · 1 high`), `OSV: ✓` when
+  clean, `OSV: offline`, and a spinner during workspace scans. Click it to open the Vulnerabilities view.
 - **Offline friendly**: results are cached on disk and served (marked `cached`) when OSV.dev
   is unreachable.
 - **Ignore list**: suppress a vulnerability from settings or from an `osv-scanner.toml`.
@@ -36,14 +40,14 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 Findings appear on the line that declares the package. Hover for the advisories, then apply the
 quick fix to move to the fixed version, keeping your range style.
 
-![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](docs/media/editor.gif)
+![Editor demo: vulnerable dependencies are flagged with a severity breakdown in the status bar, explained in a hover, listed in the Vulnerabilities view and fixed with a quick fix](docs/media/editor.gif)
 
 ### On the command line
 
 `osv-check` runs the same scan in a terminal, a pre-commit hook or CI (see
 [docs/pre-commit.md](docs/pre-commit.md)).
 
-![osv-check listing four vulnerable dependencies with their fix versions](docs/media/cli.svg)
+![osv-check listing four vulnerable dependencies with their fix versions and a severity breakdown](docs/media/cli.svg)
 
 ### Supported files
 
