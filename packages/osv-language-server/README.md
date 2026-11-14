@@ -11,7 +11,7 @@ It powers the OSV Vulnerabilities VS Code extension and works with any LSP clien
 | Binary | Purpose |
 |---|---|
 | `osv-language-server --stdio` | The language server (also `--node-ipc`; optional `--cache-dir <dir>`) |
-| `osv-check [paths...]` | CLI scanner for pre-commit hooks and CI. Exit `0` clean, `1` findings, `2` usage error or (`--strict`) network failure |
+| `osv-check [paths...]` | CLI scanner for pre-commit hooks and CI (`--format text\|json\|tree`; flags in [docs/pre-commit.md](../../docs/pre-commit.md#options)). Exit `0` clean, `1` findings, `2` usage error or (`--strict`) network failure |
 
 ```
 npx --yes osv-language-server --stdio

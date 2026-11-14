@@ -2,6 +2,7 @@
 //
 //   cd <demo project> && osv-check --min-severity high > out.txt
 //   node --import tsx scripts/render-cli-svg.ts out.txt "osv-check --min-severity high" demo-app > docs/media/cli.svg
+//   (for the tree: osv-check --format tree --only-fixable > out.txt, then pass that command text; see docs/media/cli-tree.svg)
 //
 // Layout is monospace: every glyph is CHAR_W wide, so colour spans are placed by character count.
 import { readFileSync } from "node:fs";
@@ -46,6 +47,20 @@ function spans(line: string): Span[] {
       ...(ids ? [{ text: `  ${ids}`, fill: COLOR.id }] : []),
     ];
   }
+  // --format tree: "│   ├── GHSA-x (CVE-y) [high] summary" and "    └── lodash 4.17.15 → 4.18.0 [high] (line 5)"
+  const tree = /^([│ ]*[├└]── )(.*)$/.exec(line);
+  if (tree) {
+    const [, branch, rest] = tree;
+    const out: Span[] = [{ text: branch!, fill: COLOR.muted }];
+    const dep = /^(\S+ \S+ )(→ \S+)( \[(?:critical|high|medium|low|unknown)\])( \(line \d+\).*)$/.exec(rest!);
+    if (dep) {
+      const sev = /\[(\w+)\]/.exec(dep[3]!)![1]!;
+      return [...out, { text: dep[1]!, fill: COLOR.text }, { text: dep[2]!, fill: COLOR.fix }, { text: dep[3]!, fill: severityColor(sev) }, { text: dep[4]!, fill: COLOR.muted }];
+    }
+    const adv = /^((?:GHSA|CVE|PYSEC|RUSTSEC|GO|OSV|MAL)-\S+(?: \(\S+\))?)( \[(critical|high|medium|low|unknown)\])( .*)?$/.exec(rest!);
+    if (adv) return [...out, { text: adv[1]!, fill: COLOR.id }, { text: adv[2]!, fill: severityColor(adv[3]!) }, { text: adv[4] ?? "", fill: COLOR.text }];
+    return [...out, { text: rest!, fill: COLOR.text }];
+  }
   // "2 critical · 2 high"
   if (/^\d+ (critical|high|medium|low|unknown)( · \d+ \w+)*$/.test(line)) {
     return line.split(" · ").flatMap((part, i): Span[] => {
@@ -56,12 +71,18 @@ function spans(line: string): Span[] {
   return [{ text: line, fill: COLOR.text }];
 }
 
-const lines = readFileSync(file, "utf8").replace(/\r\n/g, "\n").trimEnd().split("\n");
+const MAX_COLS = 120; // long advisory summaries are cut with an ellipsis so the image stays readable in a README
+const lines = readFileSync(file, "utf8")
+  .replace(/\r\n/g, "\n")
+  .trimEnd()
+  .split("\n")
+  .map((l) => (l.length > MAX_COLS ? `${l.slice(0, MAX_COLS - 1)}…` : l));
 const ROW = 24;
 const FIRST_Y = 102;
 const SUMMARY_GAP = 8; // extra space before the summary lines
 const isSummary = (l: string): boolean => /vulnerable dependencies in|^\d+ (critical|high|medium|low|unknown)( · |$)/.test(l);
 const firstSummary = lines.findIndex(isSummary);
+const STEP = Math.min(0.5, 8 / lines.length); // keep long listings inside the loop
 
 const widthChars = Math.max(...lines.map((l) => l.length), command.length + 2);
 const width = Math.max(753, Math.ceil(LEFT * 2 + widthChars * CHAR_W));
@@ -79,7 +100,7 @@ const css: string[] = [
 ];
 const body: string[] = [];
 lines.forEach((line, i) => {
-  const appear = 3.4 + i * 0.5 + (i >= firstSummary && firstSummary >= 0 ? 0.3 : 0);
+  const appear = 3.4 + i * STEP + (i >= firstSummary && firstSummary >= 0 ? 0.3 : 0);
   css.push(
     `@keyframes l${i}{0%,${pct(appear)}%{opacity:0}${pct(appear + 0.25)}%,90.00%{opacity:1}92.86%,100%{opacity:0}}.l${i}{opacity:0;animation:l${i} ${LOOP}.0s linear infinite}`,
   );

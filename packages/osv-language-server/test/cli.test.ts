@@ -88,6 +88,40 @@ describe("osv-check", () => {
     expect(out.findings[0]).toMatchObject({ name: "lodash", current: "4.17.15", severity: "high" });
   });
 
+  it("prints a directory tree of files, dependencies and advisories with --format tree", async () => {
+    const r = await check(VULNERABLE, ["--format", "tree"], await fakeOsv());
+    expect(r.code).toBe(1);
+    const lines = r.stdout.split("\n");
+    expect(lines[0]).toBe(".");
+    expect(lines[1]).toBe("└── package.json");
+    expect(lines[2]).toBe("    └── lodash 4.17.15 → 4.17.21 [high] (line 4)");
+    expect(lines[3]).toMatch(/^        ├── GHSA-\S+ .*\[(high|medium|low|critical)\]/);
+    expect(r.stdout).toContain("1 vulnerable dependencies in 1 files\n");
+  });
+
+  it("reports a clean repo in tree format", async () => {
+    expect((await check(CLEAN, ["--format", "tree"], await fakeOsv())).stdout).toBe("No known vulnerabilities\n");
+  });
+
+  it("--ignore suppresses a vulnerability by any alias", async () => {
+    const r = await check(VULNERABLE, ["--ignore", ...IDS.flatMap((id) => [id, "--ignore"]).slice(0, -1)], await fakeOsv());
+    expect(r.code).toBe(0);
+    expect(r.stdout).toBe("No known vulnerabilities\n");
+  });
+
+  it("--disable-ecosystem skips that ecosystem and rejects unknown ids", async () => {
+    const fake = await fakeOsv();
+    expect((await check(VULNERABLE, ["--disable-ecosystem", "npm"], fake)).code).toBe(0);
+    const bad = await check(VULNERABLE, ["--disable-ecosystem", "nope"], fake);
+    expect(bad.code).toBe(2);
+    expect(bad.stderr).toContain('unknown ecosystem "nope"');
+  });
+
+  it("rejects an invalid --cache-ttl-hours", async () => {
+    expect((await check(CLEAN, ["--cache-ttl-hours", "0"], await fakeOsv())).code).toBe(2);
+    expect((await check(CLEAN, ["--cache-ttl-hours", "abc"], await fakeOsv())).code).toBe(2);
+  });
+
   it("prints an empty JSON result for a clean repo", async () => {
     const r = await check(CLEAN, ["--format", "json"], await fakeOsv());
     expect(r.code).toBe(0);

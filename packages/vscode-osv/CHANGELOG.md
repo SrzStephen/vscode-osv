@@ -8,6 +8,7 @@
 - Commands are categorised under "OSV" with icons; scan and rescan buttons appear in the editor title bar for scanned files.
 - `osv-check` prints a severity breakdown line after its summary.
 - New setting `osv.overview.groupBy`.
+- `osv-check --format tree` prints vulnerabilities as a `tree`-style listing; new flags `--ignore`, `--disable-ecosystem`, `--cache-ttl-hours` and `--ca-certificate-path` mirror the matching extension settings. All flags are documented in `docs/pre-commit.md`.
 
 ## 0.1.0
 

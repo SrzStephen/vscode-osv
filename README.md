@@ -49,6 +49,10 @@ quick fix to move to the fixed version, keeping your range style.
 
 ![osv-check listing four vulnerable dependencies with their fix versions and a severity breakdown](docs/media/cli.svg)
 
+`--format tree --only-fixable` prints the same findings as a `tree`-style listing of files, dependencies and advisories, and most extension settings have an equivalent flag; the [flag reference](docs/pre-commit.md#options) lists them.
+
+![osv-check --format tree --only-fixable listing vulnerable dependencies and their advisories as a tree](docs/media/cli-tree.svg)
+
 ### Supported files
 
 | Ecosystem | Files |
