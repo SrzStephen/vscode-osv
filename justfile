@@ -1,6 +1,6 @@
 # Task runner for vs-code-osv. Run `just` to list recipes.
 # Wraps the npm scripts in package.json and the steps in .github/workflows/ci.yml.
-# Requires: node >= 20, npm, just. Integration tests on Linux also need xvfb-run.
+# Requires: node >= 22, npm, just. Integration tests on Linux also need xvfb-run.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 # Loads a gitignored .env so each checkout can set SSL_CERT_FILE / SSL_CERT_DIR for extra CA certificates

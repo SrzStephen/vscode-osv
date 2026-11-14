@@ -23,7 +23,7 @@ suite("OSV extension smoke test", () => {
   let fake: Awaited<ReturnType<typeof startFakeOsv>>;
 
   suiteSetup(async () => {
-    const ext = vscode.extensions.getExtension<OsvApi>("osv-vscode.vscode-osv");
+    const ext = vscode.extensions.getExtension<OsvApi>("srzstephen.vscode-osv");
     assert.ok(ext, "extension is installed");
     const fixtures = join(ext.extensionPath, "..", "osv-language-server", "test", "fixtures", "osv");
     const record = JSON.parse(readFileSync(join(fixtures, `${GHSA}.json`), "utf8")) as OsvRecord;
@@ -44,7 +44,7 @@ suite("OSV extension smoke test", () => {
     const uri = vscode.Uri.joinPath(root.uri, "package.json");
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
-    const api = (await vscode.extensions.getExtension<OsvApi>("osv-vscode.vscode-osv")!.activate()) as OsvApi;
+    const api = (await vscode.extensions.getExtension<OsvApi>("srzstephen.vscode-osv")!.activate()) as OsvApi;
 
     const diagnostic = await eventually("an osv diagnostic on the lodash version", () =>
       vscode.languages.getDiagnostics(uri).find((d) => d.source === "osv"),

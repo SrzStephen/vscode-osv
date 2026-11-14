@@ -62,7 +62,8 @@ function linesOf(text: string): Line[] {
   const lines: Line[] = [];
   let at = 0;
   for (const t of text.split("\n")) {
-    lines.push({ text: t, at });
+    // A CRLF file leaves a "\r" that `.` cannot match; drop it from the text but keep it in the offsets.
+    lines.push({ text: t.endsWith("\r") ? t.slice(0, -1) : t, at });
     at += t.length + 1;
   }
   return lines;

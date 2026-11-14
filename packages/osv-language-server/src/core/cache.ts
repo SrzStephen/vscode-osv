@@ -143,10 +143,34 @@ export class DiskCache {
     const tmp = `${path}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`;
     try {
       await fs.writeFile(tmp, JSON.stringify(value));
-      await fs.rename(tmp, path);
+      await renameReplacing(tmp, path);
     } catch (e) {
       await fs.rm(tmp, { force: true });
       throw e;
+    }
+  }
+}
+
+const LOCKED = new Set(["EPERM", "EBUSY", "EACCES"]);
+
+/**
+ * Renames over `to`. On Windows this fails with EPERM/EBUSY/EACCES while another process is replacing or
+ * reading the same file, as happens with two editor windows sharing one cache. Entries are last-writer-wins,
+ * so retry briefly and then let the other writer's equivalent entry stand.
+ */
+async function renameReplacing(from: string, to: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await fs.rename(from, to);
+      return;
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code;
+      if (code === undefined || !LOCKED.has(code)) throw e;
+      if (attempt >= 4) {
+        await fs.rm(from, { force: true });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 10 * (attempt + 1)));
     }
   }
 }

@@ -3,8 +3,9 @@ import { overlayFileSource, type FileSource } from "../../src/core/fileSource.js
 import { findLockfile, findManifestForLockfile, resolveVersion } from "../../src/core/lockfileResolver.js";
 import type { DeclaredDep, ResolvedDep } from "../../src/core/types.js";
 import { npmModule } from "../../src/ecosystems/npm/index.js";
+import { memFs, toPosix } from "../helpers/memFs.js";
 
-const memFiles = (m: Record<string, string>): FileSource => ({ read: async (p) => m[p], list: async () => [] });
+const memFiles = (m: Record<string, string>): FileSource => memFs(m);
 const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } };
 const dep = (over: Partial<DeclaredDep> = {}): DeclaredDep => ({ name: "lodash", rawSpec: "^4.17.0", lowerBound: "4.17.0", nameRange: range, kind: "registry", ...over });
 const locked = (version: string, over: Partial<ResolvedDep> = {}): ResolvedDep => ({ name: "lodash", version, range, direct: false, ...over });
@@ -12,7 +13,7 @@ const locked = (version: string, over: Partial<ResolvedDep> = {}): ResolvedDep =
 describe("lockfileResolver", () => {
   it("walks up to the root but not beyond", async () => {
     const files = memFiles({ "/ws/package-lock.json": "{}", "/package-lock.json": "{}" });
-    expect((await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws", files))?.path).toBe("/ws/package-lock.json");
+    expect(toPosix((await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws", files))!.path)).toBe("/ws/package-lock.json");
     expect(await findLockfile("/ws2/package.json", npmModule, "/ws2", files)).toBeUndefined();
   });
 
@@ -23,7 +24,7 @@ describe("lockfileResolver", () => {
 
   it("treats a trailing-slash rootDir as the same root", async () => {
     const files = memFiles({ "/ws/package-lock.json": "{}", "/package-lock.json": "{}" });
-    expect((await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws/", files))?.path).toBe("/ws/package-lock.json");
+    expect(toPosix((await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws/", files))!.path)).toBe("/ws/package-lock.json");
     expect(await findLockfile("/ws/pkgs/a/package.json", npmModule, "/ws/", memFiles({ "/package-lock.json": "{}" }))).toBeUndefined();
   });
 
@@ -50,7 +51,7 @@ describe("lockfileResolver", () => {
 
   it("finds the manifest beside a lockfile only", async () => {
     const files = memFiles({ "/ws/package.json": "{}", "/package.json": "{}" });
-    expect((await findManifestForLockfile("/ws/package-lock.json", npmModule, files))?.path).toBe("/ws/package.json");
+    expect(toPosix((await findManifestForLockfile("/ws/package-lock.json", npmModule, files))!.path)).toBe("/ws/package.json");
     expect(await findManifestForLockfile("/ws/sub/package-lock.json", npmModule, files)).toBeUndefined();
   });
 

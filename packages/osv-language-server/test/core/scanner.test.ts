@@ -3,9 +3,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { IgnoreMatcher } from "../../src/core/ignores.js";
 import { findingKey } from "../../src/core/findingKey.js";
-import { scanDocument, type ScanContext } from "../../src/core/scanner.js";
+import { scanDocument as scanDocumentNative, type ScanContext } from "../../src/core/scanner.js";
 import { DEFAULT_SETTINGS, type Settings } from "../../src/core/settings.js";
 import type { OsvRecord, PackageQuery } from "../../src/core/types.js";
+import { memFs, posixResult } from "../helpers/memFs.js";
+
+// Findings carry native paths and file URIs; compare them in POSIX form on every platform.
+const scanDocument = posixResult(scanDocumentNative);
 
 const fixture = (id: string): OsvRecord => JSON.parse(readFileSync(join(__dirname, "..", "fixtures", "osv", `${id}.json`), "utf8")) as OsvRecord;
 const lodashRecords = (): OsvRecord[] => ["GHSA-35jh-r3h4-6jhm", "GHSA-29mw-wpgm-hmr9", "GHSA-p6mc-m468-83gw"].map(fixture);
@@ -27,7 +31,7 @@ interface CtxOpts {
 
 function ctx(files: Record<string, string> = {}, opts: CtxOpts = {}): ScanContext {
   return {
-    files: { read: async (p) => files[p], list: async () => [] },
+    files: memFs(files),
     osv: {
       lookup: async (queries: PackageQuery[]) => {
         const results = new Map<string, { records: OsvRecord[]; cached: boolean }>();
@@ -176,6 +180,47 @@ describe("scanDocument", () => {
 
     const none = await scanDocument(uri, "/ws/package.json", pkgJson, ctx(files, { ignored: ["CVE-2021-23337", "CVE-2020-28500", "CVE-2020-8203"] }));
     expect(none.findings).toEqual([]);
+  });
+
+  describe("onlyShowFixable", () => {
+    // qs has no fixed event, lodash is fixed in 4.17.21.
+    const unfixedQs: OsvRecord = {
+      id: "GHSA-nofix-nofix-nofix",
+      modified: "2026-01-01T00:00:00Z",
+      database_specific: { severity: "HIGH" },
+      affected: [{ package: { ecosystem: "npm", name: "qs" }, ranges: [{ type: "SEMVER", events: [{ introduced: "0" }] }] }],
+    };
+    const manifest = '{"dependencies":{"lodash":"^4.17.15","qs":"^6.5.0"}}';
+    const lock = JSON.stringify({
+      lockfileVersion: 3,
+      packages: { "": { dependencies: { lodash: "^4.17.15", qs: "^6.5.0" } }, "node_modules/lodash": { version: "4.17.15" }, "node_modules/qs": { version: "6.5.0" } },
+    });
+    const run = (onlyShowFixable?: boolean) => {
+      const base = ctx({ "/ws/package-lock.json": lock }, onlyShowFixable === undefined ? {} : { settings: { onlyShowFixable } });
+      const c: ScanContext = {
+        ...base,
+        osv: {
+          lookup: async (queries: PackageQuery[]) => ({
+            results: new Map(queries.map((q) => [`${q.ecosystem}|${q.name}|${q.version}`, { records: q.name === "lodash" ? lodashRecords() : [unfixedQs], cached: false }])),
+            offline: false,
+            skipped: [],
+          }),
+        },
+      };
+      return scanDocument(uri, "/ws/package.json", manifest, c);
+    };
+
+    it("keeps findings with no fix by default", async () => {
+      const r = await run();
+      expect(r.findings.map((f) => f.name).sort()).toEqual(["lodash", "qs"]);
+      expect(r.findings.find((f) => f.name === "qs")!.fix.target).toBeUndefined();
+    });
+
+    it("hides findings with no fix when enabled, and keeps fixable ones", async () => {
+      const r = await run(true);
+      expect(r.findings.map((f) => f.name)).toEqual(["lodash"]);
+      expect(r.findings[0]!.fix.target).toBe("4.17.21");
+    });
   });
 
   it("parse error reported, no throw", async () => {

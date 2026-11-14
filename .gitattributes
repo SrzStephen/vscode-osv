@@ -1,0 +1,8 @@
+# Check text files out with LF on every platform. Tests rewrite fixture text with LF-only patterns,
+# and the generated pattern files are compared byte for byte.
+* text=auto eol=lf
+
+*.png binary
+*.gif binary
+*.vsix binary
+*.pem -text

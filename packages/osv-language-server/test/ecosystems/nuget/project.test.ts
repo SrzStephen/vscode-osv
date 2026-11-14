@@ -5,6 +5,7 @@ import { LineIndex } from "../../../src/core/lineIndex.js";
 import type { TextRange } from "../../../src/core/types.js";
 import { parsePackagesProps, parseProjectFile, resolveCentralVersions } from "../../../src/ecosystems/nuget/project.js";
 import { ParseError } from "../../../src/ecosystems/types.js";
+import { memFs, toPosix } from "../../helpers/memFs.js";
 
 const read = (...p: string[]): string => readFileSync(join(__dirname, "..", "..", "fixtures", "nuget", ...p), "utf8");
 const slice = (text: string, r: TextRange): string => {
@@ -74,14 +75,14 @@ describe("resolveCentralVersions", () => {
     "/ws/cpm/Directory.Packages.props": read("cpm", "Directory.Packages.props"),
     "/ws/cpm/src/app/app.csproj": read("cpm", "src", "app", "app.csproj"),
   };
-  const fs = { read: async (p: string) => files[p], list: async () => [] };
+  const fs = memFs(files);
   const ctx = { manifestPath: "/ws/cpm/src/app/app.csproj", rootDir: "/ws", files: fs };
 
   it("fills versions from the nearest Directory.Packages.props, case-insensitively", async () => {
     const deps = await resolveCentralVersions(parseProjectFile(files[ctx.manifestPath]!), ctx);
     const nj = deps.find((d) => d.name === "newtonsoft.json")!;
     expect(nj).toMatchObject({ rawSpec: "12.0.3", lowerBound: "12.0.3", kind: "registry" });
-    expect(nj.specLocation!.path).toBe("/ws/cpm/Directory.Packages.props");
+    expect(toPosix(nj.specLocation!.path)).toBe("/ws/cpm/Directory.Packages.props");
     expect(slice(files["/ws/cpm/Directory.Packages.props"]!, nj.specLocation!.range)).toBe("12.0.3");
     expect(deps.find((d) => d.name === "POLLY")).toMatchObject({ rawSpec: "8.0.0", kind: "registry" });
     expect(deps.find((d) => d.name === "Unmanaged")).toMatchObject({ kind: "unresolved" });
@@ -93,7 +94,7 @@ describe("resolveCentralVersions", () => {
       ctx,
     );
     const p = deps[0]!;
-    expect(p.specLocation!.path).toBe("/ws/cpm/Directory.Packages.props");
+    expect(toPosix(p.specLocation!.path)).toBe("/ws/cpm/Directory.Packages.props");
     expect(slice(files["/ws/cpm/Directory.Packages.props"]!, p.specLocation!.range)).toBe("7.2.3");
   });
 

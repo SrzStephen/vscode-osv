@@ -8,6 +8,7 @@ npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, 
 ```
 osv-check [paths...]
   --min-severity low|medium|high|critical   default: low
+  --only-fixable                             hide findings with no official fix yet
   --format text|json                         default: text
   --strict                                   OSV unreachable without cache -> exit 2
   --no-lockfiles                             skip lockfile entries
@@ -61,8 +62,8 @@ extension and the language server.
 
 ```yaml
 repos:
-  - repo: https://github.com/<org>/vscode-osv
-    rev: v1.0.0
+  - repo: https://github.com/SrzStephen/vscode-osv
+    rev: v0.1.0
     hooks:
       - id: osv-check
         args: [--min-severity, high]

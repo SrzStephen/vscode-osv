@@ -11,6 +11,8 @@ manifests and lockfiles, with one-click fixes.
 - Status bar: `OSV: N vulnerable`, `OSV: ✓` or `OSV: offline`; click to open the Problems panel.
 - Works offline from a disk cache.
 
+![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/editor.gif)
+
 <!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
 
 ## Privacy
@@ -25,6 +27,7 @@ manifests and lockfiles, with one-click fixes.
 | `osv.enable` | `true` | Master switch (workspace-scoped) |
 | `osv.ecosystems` | all enabled | Object of per-ecosystem booleans |
 | `osv.minimumSeverity` | `"low"` | Hide findings below this level |
+| `osv.onlyShowFixable` | `false` | Only show vulnerabilities with an official fix (a fixed version in the OSV record); ones with no fix yet are hidden |
 | `osv.scanLockfiles` | `true` | Highlight entries inside lockfiles |
 | `osv.scanWorkspaceOnStartup` | `false` | Run workspace scan when the server starts |
 | `osv.cacheTtlHours` | `48` | Package-result freshness, minimum 1 |

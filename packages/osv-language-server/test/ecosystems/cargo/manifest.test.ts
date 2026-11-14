@@ -6,14 +6,12 @@ import type { FileSource } from "../../../src/core/fileSource.js";
 import { parseCargoManifest, resolveCargoWorkspace } from "../../../src/ecosystems/cargo/manifest.js";
 import { ParseError } from "../../../src/ecosystems/types.js";
 import { textAt } from "../../helpers/textAt.js";
+import { memFs, toPosix } from "../../helpers/memFs.js";
 
 const read = (f: string) => readFileSync(join(__dirname, "..", "..", "fixtures", "cargo", f), "utf8");
 const rows = (deps: DeclaredDep[]) => deps.map((d) => [d.name, d.group?.replace(/:workspace$/, ""), d.lowerBound, d.kind]);
 
-const memFiles = (files: Record<string, string>): FileSource => ({
-  read: async (p) => files[p],
-  list: async () => [],
-});
+const memFiles = (files: Record<string, string>): FileSource => memFs(files);
 
 describe("parseCargoManifest", () => {
   it("parses tables, renames, git, workspace", () =>
@@ -61,7 +59,7 @@ describe("resolveCargoWorkspace", () => {
     expect(tokio.rawSpec).toBe("1.0");
     expect(tokio.lowerBound).toBe("1.0.0");
     expect(tokio.kind).toBe("registry");
-    expect(tokio.specLocation!.path).toBe("/r/Cargo.toml");
+    expect(toPosix(tokio.specLocation!.path)).toBe("/r/Cargo.toml");
     expect(tokio.specLocation!.rawSpec).toBe("1.0");
     expect(textAt(root, tokio.specLocation!.range)).toBe("1.0");
     expect(deps.find((d) => d.name === "serde")!.lowerBound).toBe("1.0.0");
@@ -87,6 +85,6 @@ describe("resolveCargoWorkspace", () => {
   it("skips a nearer Cargo.toml without [workspace]", async () => {
     const files = memFiles({ "/r/Cargo.toml": root, "/r/a/Cargo.toml": "[package]\nname='a'\n", "/r/a/m/Cargo.toml": member });
     const deps = await resolveCargoWorkspace(parseCargoManifest(member), { manifestPath: "/r/a/m/Cargo.toml", rootDir: "/r", files });
-    expect(deps.find((d) => d.name === "tokio")!.specLocation!.path).toBe("/r/Cargo.toml");
+    expect(toPosix(deps.find((d) => d.name === "tokio")!.specLocation!.path)).toBe("/r/Cargo.toml");
   });
 });

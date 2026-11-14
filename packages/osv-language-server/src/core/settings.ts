@@ -5,6 +5,8 @@ export interface Settings {
   enable: boolean;
   ecosystems: Record<string, boolean>;
   minimumSeverity: MinimumSeverity;
+  /** Hide findings with no official fix (no fixed version in any affecting OSV record). */
+  onlyShowFixable: boolean;
   scanLockfiles: boolean;
   scanWorkspaceOnStartup: boolean;
   cacheTtlHours: number;
@@ -18,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enable: true,
   ecosystems: {},
   minimumSeverity: "low",
+  onlyShowFixable: false,
   scanLockfiles: true,
   scanWorkspaceOnStartup: false,
   cacheTtlHours: 48,
@@ -53,6 +56,7 @@ export function normalizeSettings(raw: unknown): Settings {
     enable: bool(r.enable, d.enable),
     ecosystems,
     minimumSeverity: typeof r.minimumSeverity === "string" && SEVERITIES.includes(r.minimumSeverity) ? (r.minimumSeverity as MinimumSeverity) : d.minimumSeverity,
+    onlyShowFixable: bool(r.onlyShowFixable, d.onlyShowFixable),
     scanLockfiles: bool(r.scanLockfiles, d.scanLockfiles),
     scanWorkspaceOnStartup: bool(r.scanWorkspaceOnStartup, d.scanWorkspaceOnStartup),
     cacheTtlHours: ttl,

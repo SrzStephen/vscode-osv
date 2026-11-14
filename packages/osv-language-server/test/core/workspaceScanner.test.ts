@@ -44,7 +44,9 @@ describe("discoverFiles", () => {
     expect(found).toHaveLength(2);
   });
 
-  it("an unreadable subdirectory is reported and does not abort discovery", async () => {
+  // chmod 000 does not make a directory unreadable on Windows, or for root.
+  const canLockDirs = process.platform !== "win32" && process.getuid?.() !== 0;
+  it.skipIf(!canLockDirs)("an unreadable subdirectory is reported and does not abort discovery", async () => {
     const locked = join(root, "locked");
     mkdirSync(locked);
     writeFileSync(join(locked, "package.json"), "{}");

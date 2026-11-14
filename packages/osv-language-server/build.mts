@@ -8,6 +8,8 @@ await build({
   outdir: `${dir}dist`,
   bundle: true,
   platform: "node",
+  // The bundle also runs inside VS Code's own Node (engines.vscode ^1.90.0 ships Node 20), so this is
+  // lower than the "engines" floor of the npm package on purpose.
   target: "node20",
   format: "cjs",
   // jsonc-parser's "main" is a UMD build whose relative requires esbuild cannot follow; use its ESM build.

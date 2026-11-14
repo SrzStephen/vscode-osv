@@ -72,6 +72,12 @@ describe("osv-check", () => {
     expect(r.stdout).toBe("No known vulnerabilities\n");
   });
 
+  it("--only-fixable keeps findings that have a fix", async () => {
+    const r = await check(VULNERABLE, ["--only-fixable"], await fakeOsv());
+    expect(r.code).toBe(1);
+    expect(r.stdout).not.toBe("No known vulnerabilities\n");
+  });
+
   it("prints parseable JSON with --format json", async () => {
     const r = await check(VULNERABLE, ["--format", "json"], await fakeOsv());
     expect(r.code).toBe(1);

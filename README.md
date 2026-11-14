@@ -31,7 +31,19 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 - **Pre-commit and CI**: the `osv-check` command, see [docs/pre-commit.md](docs/pre-commit.md).
 - **Any editor or AI agent** that speaks LSP: see [docs/agents.md](docs/agents.md).
 
-<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
+### In the editor
+
+Findings appear on the line that declares the package. Hover for the advisories, then apply the
+quick fix to move to the fixed version, keeping your range style.
+
+![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](docs/media/editor.gif)
+
+### On the command line
+
+`osv-check` runs the same scan in a terminal, a pre-commit hook or CI (see
+[docs/pre-commit.md](docs/pre-commit.md)).
+
+![osv-check listing four vulnerable dependencies with their fix versions](docs/media/cli.svg)
 
 ### Supported files
 
@@ -82,6 +94,7 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 | `osv.enable` | `true` | Master switch (workspace-scoped) |
 | `osv.ecosystems` | all enabled | Object of per-ecosystem booleans, e.g. `{ "npm": true, "pypi": false }` |
 | `osv.minimumSeverity` | `"low"` | Hide findings below this level |
+| `osv.onlyShowFixable` | `false` | Only show vulnerabilities with an official fix (a fixed version in the OSV record); ones with no fix yet are hidden |
 | `osv.scanLockfiles` | `true` | Highlight entries inside lockfiles |
 | `osv.scanWorkspaceOnStartup` | `false` | Run workspace scan when the server starts |
 | `osv.cacheTtlHours` | `48` | Package-result freshness, minimum 1 |
@@ -125,3 +138,7 @@ npm run lint
 npm run typecheck
 scripts/test-precommit.sh     # needs the pre-commit tool and network access
 ```
+
+## License
+
+[MIT](LICENSE)

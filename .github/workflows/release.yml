@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -32,9 +32,12 @@ jobs:
   publish:
     needs: verify
     runs-on: ubuntu-latest
+    # Holds OVSX_PAT and the Azure ids, and is the OIDC subject for Entra
+    # (repo:<org>/<repo>:environment:release). Add required reviewers here for a manual gate.
+    environment: release
     permissions:
       contents: write # create the GitHub release and attach the VSIX
-      id-token: write # npm provenance
+      id-token: write # OIDC: npm trusted publishing (and provenance) and Azure login
     steps:
       - uses: actions/checkout@v4
       - name: Check the tag matches every published version
@@ -49,9 +52,11 @@ jobs:
           fi
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1, newer than the npm bundled with some Node releases
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run build
       - name: Package VSIX
@@ -60,18 +65,21 @@ jobs:
         run: |
           npm publish -w osv-language-server --dry-run
           (cd packages/vscode-osv && npx vsce package --no-dependencies -o "$RUNNER_TEMP/preflight.vsix")
+      - name: Log in to Azure (OIDC, no stored secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
       - name: Publish to VS Code Marketplace
-        run: npx vsce publish --packagePath packages/vscode-osv/*.vsix
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx vsce publish --azure-credential --packagePath packages/vscode-osv/*.vsix
       - name: Publish to Open VSX
         run: npx ovsx publish packages/vscode-osv/*.vsix
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      # Authenticates through npm trusted publishing (OIDC); no token. Provenance is automatic.
       - name: Publish osv-language-server to npm
-        run: npm publish -w osv-language-server --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish -w osv-language-server --access public
       - name: Create GitHub release with VSIX
         run: gh release create "$GITHUB_REF_NAME" packages/vscode-osv/*.vsix --title "$GITHUB_REF_NAME" --generate-notes
         env:

@@ -15,7 +15,7 @@ npx --yes osv-language-server --stdio
 - Transport: stdio (`--stdio`). `--node-ipc` is also supported.
 - Optional: `--cache-dir <dir>` (or `--cache-dir=<dir>`) overrides the cache location. The
   `cacheDir` initialization option does the same and wins over the command-line flag.
-- Requires Node 20 or later. The server only reads workspace files and calls the OSV API; it
+- Requires Node 22 or later. The server only reads workspace files and calls the OSV API; it
   never executes processes.
 
 Files handled: `package.json`, `package-lock.json`, `npm-shrinkwrap.json`,
@@ -37,6 +37,7 @@ All fields are optional. Unknown keys are dropped and invalid values fall back t
     "enable": true,                      // master switch
     "ecosystems": { "npm": true, "pypi": true, "cargo": true, "maven": true, "go": true, "nuget": true, "rubygems": true, "packagist": true, "githubActions": true, "pub": true, "hex": true, "swift": true }, // per-module booleans; unlisted = enabled
     "minimumSeverity": "low",            // "low" | "medium" | "high" | "critical"
+    "onlyShowFixable": false,            // true hides findings with no official fix
     "scanLockfiles": true,               // report entries inside lockfiles
     "scanWorkspaceOnStartup": false,
     "cacheTtlHours": 48,                 // minimum 1

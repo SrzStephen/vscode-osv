@@ -30,6 +30,7 @@ With no paths, every manifest and lockfile under the current directory is checke
 
 Options:
   --min-severity <level>  low|medium|high|critical (default: low)
+  --only-fixable          hide findings that have no official fix yet
   --format <format>       text|json (default: text)
   --strict                exit 2 if osv.dev is unreachable and nothing is cached
   --no-lockfiles          skip lockfile entries
@@ -82,6 +83,7 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
       allowPositionals: true,
       options: {
         "min-severity": { type: "string", default: "low" },
+        "only-fixable": { type: "boolean", default: false },
         format: { type: "string", default: "text" },
         strict: { type: "boolean", default: false },
         "no-lockfiles": { type: "boolean", default: false },
@@ -115,6 +117,7 @@ export async function runCheck(argv: string[], io: CliIo): Promise<number> {
     const settings: Settings = {
       ...DEFAULT_SETTINGS,
       minimumSeverity: minSeverity as MinimumSeverity,
+      onlyShowFixable: values["only-fixable"],
       scanLockfiles: !values["no-lockfiles"],
       apiBaseUrl: values["api-base-url"]?.replace(/\/+$/, "") || DEFAULT_SETTINGS.apiBaseUrl,
     };
