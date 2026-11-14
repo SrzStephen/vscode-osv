@@ -11,6 +11,8 @@ manifests and lockfiles, with one-click fixes.
 - Status bar: `OSV: N vulnerable`, `OSV: ✓` or `OSV: offline`; click to open the Problems panel.
 - Works offline from a disk cache.
 
+![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/editor.gif)
+
 <!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
 
 ## Privacy

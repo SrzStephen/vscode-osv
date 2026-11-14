@@ -31,7 +31,19 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 - **Pre-commit and CI**: the `osv-check` command, see [docs/pre-commit.md](docs/pre-commit.md).
 - **Any editor or AI agent** that speaks LSP: see [docs/agents.md](docs/agents.md).
 
-<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
+### In the editor
+
+Findings appear on the line that declares the package. Hover for the advisories, then apply the
+quick fix to move to the fixed version, keeping your range style.
+
+![Editor demo: a vulnerable dependency is flagged, hovered and fixed with a quick fix](docs/media/editor.gif)
+
+### On the command line
+
+`osv-check` runs the same scan in a terminal, a pre-commit hook or CI (see
+[docs/pre-commit.md](docs/pre-commit.md)).
+
+![osv-check listing four vulnerable dependencies with their fix versions](docs/media/cli.svg)
 
 ### Supported files
 
