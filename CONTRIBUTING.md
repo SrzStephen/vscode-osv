@@ -19,8 +19,8 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 ### Open decisions (spec section 18) - resolve before the first release
 
-- [ ] Choose the GitHub org/repo (`<github-org>/vscode-osv`). It is used in the pre-commit
-      `repo:` URL in the README and docs, and in the packages' `repository` fields.
+- [x] GitHub repo: `SrzStephen/vscode-osv`. It is used in the pre-commit `repo:` URL in the
+      docs and in the packages' `repository` fields.
 - [ ] Choose the Marketplace publisher ID (`<marketplace-publisher>`) and set `publisher` in
       `packages/vscode-osv/package.json` (currently the placeholder `osv-vscode`).
 - [ ] Decide on the npm package name/scope for `osv-language-server`, remove `"private": true`
@@ -34,7 +34,7 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
     npmjs.com open the package's Settings > Trusted Publisher and enter the GitHub org/repo,
     workflow `release.yml` and environment `release`.
   - **VS Code Marketplace:** register a Microsoft Entra app, add a federated credential with
-    subject `repo:<github-org>/<repo>:environment:release`, and add its service principal as
+    subject `repo:SrzStephen/vscode-osv:environment:release`, and add its service principal as
     a Contributor on the Marketplace publisher (Members page). Save the app's client ID and
     tenant ID as the `release` environment variables `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`
     (they are not secrets).

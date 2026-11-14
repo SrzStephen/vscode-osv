@@ -3,6 +3,15 @@
   "displayName": "OSV Vulnerabilities",
   "description": "Highlights known vulnerabilities (OSV.dev) in dependency manifests and lockfiles, with one-click fixes.",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SrzStephen/vscode-osv.git",
+    "directory": "packages/vscode-osv"
+  },
+  "homepage": "https://github.com/SrzStephen/vscode-osv/tree/main/packages/vscode-osv#readme",
+  "bugs": {
+    "url": "https://github.com/SrzStephen/vscode-osv/issues"
+  },
   "publisher": "osv-vscode",
   "icon": "icon.png",
   "private": true,
