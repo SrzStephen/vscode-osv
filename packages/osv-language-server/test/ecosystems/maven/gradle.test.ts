@@ -26,6 +26,12 @@ describe.each(["build.gradle", "build.gradle.kts"])("parseGradleBuild %s", (file
     ]);
   });
 
+  it("parses CRLF line endings exactly like LF, with the same positions", () => {
+    const crlf = parseGradleBuild(text.replace(/\r?\n/g, "\r\n"));
+    expect(crlf.map((d) => [d.group, d.name, d.rawSpec])).toEqual(deps.map((d) => [d.group, d.name, d.rawSpec]));
+    expect(crlf.length).toBe(5);
+  });
+
   it("string, map and platform notation", () => {
     expect(find(deps, "org.slf4j:slf4j-api")).toMatchObject({ rawSpec: "1.7.30", lowerBound: "1.7.30", kind: "registry" });
     expect(textAt(text, find(deps, "org.slf4j:slf4j-api").specRange!)).toBe("1.7.30");
