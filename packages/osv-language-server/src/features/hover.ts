@@ -28,12 +28,8 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 export function renderHover(f: Finding): string {
   const n = f.vulns.length;
   const badge = `${ICON[f.severity]} ${capitalize(f.severity)}`;
+  // VS Code caps the hover height, so the fix and its actions come first and the (possibly long) advisory list last.
   const lines: string[] = [`**${f.name} ${f.current}** — ${n} known vulnerabilit${n === 1 ? "y" : "ies"} · ${badge}`, ""];
-  for (const v of f.vulns) {
-    const aliases = v.aliases.length ? ` _(${v.aliases.map(escapeInline).join(", ")})_` : "";
-    lines.push(`- ${ICON[v.severity]} [${escapeInline(v.id)}](${vulnerabilityUrl(v.id)}) ${capitalize(v.severity)} — ${escapeMarkdown(v.summary)}${aliases}`);
-  }
-  lines.push("");
   const target = f.fix.target === undefined ? undefined : escapeInline(f.fix.target);
   if (target === undefined) lines.push("⚠ No fixed version available");
   else lines.push(`✅ **Fixed in ${target}** (${f.fix.fixesAll ? "fixes all" : "does not fix all"} ${n})`);
@@ -53,6 +49,12 @@ export function renderHover(f: Finding): string {
     links.push(commandLink(`Ignore ${escapeInline(top.id)}`, "osv.ignore", { id: top.id }));
   }
   if (links.length) lines.push("", links.join(" | "));
+
+  lines.push("");
+  for (const v of f.vulns) {
+    const aliases = v.aliases.length ? ` _(${v.aliases.map(escapeInline).join(", ")})_` : "";
+    lines.push(`- ${ICON[v.severity]} [${escapeInline(v.id)}](${vulnerabilityUrl(v.id)}) ${capitalize(v.severity)} — ${escapeMarkdown(v.summary)}${aliases}`);
+  }
   return lines.join("\n");
 }
 

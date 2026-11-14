@@ -28,6 +28,16 @@ describe("renderHover", () => {
     expect(md).toContain("(fixes all 5)");
   });
 
+  it("puts the fix and its actions above the advisory list (VS Code clips tall hovers)", () => {
+    const md = renderHover(finding({ vulns: [vuln("A-1"), vuln("B-2"), vuln("C-3")] }));
+    const fixAt = md.indexOf("Fixed in");
+    const updateAt = md.indexOf("command:osv.update");
+    const firstRow = md.indexOf("- 🟠");
+    expect(fixAt).toBeGreaterThan(-1);
+    expect(fixAt).toBeLessThan(updateAt);
+    expect(updateAt).toBeLessThan(firstRow);
+  });
+
   it("lists aliases (escaped) after the summary and shows the overall severity badge", () => {
     const vulns = [{ ...vuln("GHSA-aaaa-bbbb-cccc", "critical"), aliases: ["CVE-2024-0001", "evil*alias"] }];
     const md = renderHover(finding({ vulns, severity: "critical" }));
