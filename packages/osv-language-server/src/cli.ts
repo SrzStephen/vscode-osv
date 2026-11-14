@@ -43,6 +43,8 @@ Exit codes: 0 no findings, 1 findings, 2 usage error or network failure under --
 `;
 
 const SEVERITY_LEVELS: readonly string[] = ["low", "medium", "high", "critical"];
+/** Most severe first, for the summary breakdown (the status bar uses the same order). */
+const SEVERITY_ORDER = ["critical", "high", "medium", "low", "unknown"] as const;
 const FORMATS: readonly string[] = ["text", "json"];
 const OFFLINE_WARNING = "warning: osv.dev unreachable and no cached data; results incomplete\n";
 const INCOMPLETE_SUMMARY = "Results incomplete: no vulnerability data (OSV unreachable, no cache)\n";
@@ -61,7 +63,12 @@ export function formatText(findings: Finding[], cwd: string, incomplete = false)
     return `${where}  ${f.severity}  ${f.name} ${f.current} → ${f.fix.target ?? "no fix"}  ${first?.id ?? ""}${more}${f.cached ? " (cached)" : ""}`;
   });
   const files = new Set(findings.map((f) => f.uri)).size;
-  const summary = incomplete ? INCOMPLETE_SUMMARY : `${findings.length} vulnerable dependencies in ${files} files\n`;
+  const counts = new Map<string, number>();
+  for (const f of findings) counts.set(f.severity, (counts.get(f.severity) ?? 0) + 1);
+  const breakdown = SEVERITY_ORDER.filter((s) => counts.has(s))
+    .map((s) => `${counts.get(s)} ${s}`)
+    .join(" · ");
+  const summary = incomplete ? INCOMPLETE_SUMMARY : `${findings.length} vulnerable dependencies in ${files} files\n${breakdown}\n`;
   return `${lines.join("\n")}\n${summary}`;
 }
 

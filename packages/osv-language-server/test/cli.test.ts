@@ -51,6 +51,7 @@ describe("osv-check", () => {
     expect(r.code).toBe(1);
     expect(r.stdout).toContain("package.json:4:16  high  lodash 4.17.15 → 4.17.21  GHSA-35jh-r3h4-6jhm, +2 more\n");
     expect(r.stdout).toContain("1 vulnerable dependencies in 1 files\n");
+    expect(r.stdout).toContain("1 vulnerable dependencies in 1 files\n1 high\n");
     expect(r.stderr).toBe("");
   });
 
