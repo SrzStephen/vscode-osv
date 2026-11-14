@@ -130,6 +130,11 @@
           ],
           "description": "Hide findings below this severity."
         },
+        "osv.onlyShowFixable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show vulnerabilities that have an official fix, that is, a fixed version in the OSV record. Vulnerabilities with no fix yet are hidden. Severity is still scored from CVSS (v3 and v4) and filtered separately by osv.minimumSeverity."
+        },
         "osv.scanLockfiles": {
           "type": "boolean",
           "default": true,

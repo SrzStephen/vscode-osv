@@ -28,6 +28,7 @@ const SETTING_KEYS = [
   "enable",
   "ecosystems",
   "minimumSeverity",
+  "onlyShowFixable",
   "scanLockfiles",
   "scanWorkspaceOnStartup",
   "cacheTtlHours",

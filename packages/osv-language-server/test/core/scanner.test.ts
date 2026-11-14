@@ -178,6 +178,47 @@ describe("scanDocument", () => {
     expect(none.findings).toEqual([]);
   });
 
+  describe("onlyShowFixable", () => {
+    // qs has no fixed event, lodash is fixed in 4.17.21.
+    const unfixedQs: OsvRecord = {
+      id: "GHSA-nofix-nofix-nofix",
+      modified: "2026-01-01T00:00:00Z",
+      database_specific: { severity: "HIGH" },
+      affected: [{ package: { ecosystem: "npm", name: "qs" }, ranges: [{ type: "SEMVER", events: [{ introduced: "0" }] }] }],
+    };
+    const manifest = '{"dependencies":{"lodash":"^4.17.15","qs":"^6.5.0"}}';
+    const lock = JSON.stringify({
+      lockfileVersion: 3,
+      packages: { "": { dependencies: { lodash: "^4.17.15", qs: "^6.5.0" } }, "node_modules/lodash": { version: "4.17.15" }, "node_modules/qs": { version: "6.5.0" } },
+    });
+    const run = (onlyShowFixable?: boolean) => {
+      const base = ctx({ "/ws/package-lock.json": lock }, onlyShowFixable === undefined ? {} : { settings: { onlyShowFixable } });
+      const c: ScanContext = {
+        ...base,
+        osv: {
+          lookup: async (queries: PackageQuery[]) => ({
+            results: new Map(queries.map((q) => [`${q.ecosystem}|${q.name}|${q.version}`, { records: q.name === "lodash" ? lodashRecords() : [unfixedQs], cached: false }])),
+            offline: false,
+            skipped: [],
+          }),
+        },
+      };
+      return scanDocument(uri, "/ws/package.json", manifest, c);
+    };
+
+    it("keeps findings with no fix by default", async () => {
+      const r = await run();
+      expect(r.findings.map((f) => f.name).sort()).toEqual(["lodash", "qs"]);
+      expect(r.findings.find((f) => f.name === "qs")!.fix.target).toBeUndefined();
+    });
+
+    it("hides findings with no fix when enabled, and keeps fixable ones", async () => {
+      const r = await run(true);
+      expect(r.findings.map((f) => f.name)).toEqual(["lodash"]);
+      expect(r.findings[0]!.fix.target).toBe("4.17.21");
+    });
+  });
+
   it("parse error reported, no throw", async () => {
     const r = await scanDocument(uri, "/ws/package.json", '{"dependencies":', ctx());
     expect(r).toEqual({ findings: [], offline: false, parseError: true });

@@ -37,6 +37,7 @@ All fields are optional. Unknown keys are dropped and invalid values fall back t
     "enable": true,                      // master switch
     "ecosystems": { "npm": true, "pypi": true, "cargo": true, "maven": true, "go": true, "nuget": true, "rubygems": true, "packagist": true, "githubActions": true, "pub": true, "hex": true, "swift": true }, // per-module booleans; unlisted = enabled
     "minimumSeverity": "low",            // "low" | "medium" | "high" | "critical"
+    "onlyShowFixable": false,            // true hides findings with no official fix
     "scanLockfiles": true,               // report entries inside lockfiles
     "scanWorkspaceOnStartup": false,
     "cacheTtlHours": 48,                 // minimum 1

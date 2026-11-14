@@ -82,6 +82,7 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 | `osv.enable` | `true` | Master switch (workspace-scoped) |
 | `osv.ecosystems` | all enabled | Object of per-ecosystem booleans, e.g. `{ "npm": true, "pypi": false }` |
 | `osv.minimumSeverity` | `"low"` | Hide findings below this level |
+| `osv.onlyShowFixable` | `false` | Only show vulnerabilities with an official fix (a fixed version in the OSV record); ones with no fix yet are hidden |
 | `osv.scanLockfiles` | `true` | Highlight entries inside lockfiles |
 | `osv.scanWorkspaceOnStartup` | `false` | Run workspace scan when the server starts |
 | `osv.cacheTtlHours` | `48` | Package-result freshness, minimum 1 |

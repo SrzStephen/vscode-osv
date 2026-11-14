@@ -14,7 +14,15 @@ describe("settings", () => {
     expect(s.minimumSeverity).toBe("low");
     expect(s.ignoredVulnerabilities).toEqual(["CVE-1"]);
     expect(s.offerLockCommand).toBe("never");
+    expect(s.onlyShowFixable).toBe(false);
     expect(s).not.toHaveProperty("extra");
+  });
+
+  it("onlyShowFixable is off by default and only accepts booleans", () => {
+    expect(DEFAULT_SETTINGS.onlyShowFixable).toBe(false);
+    expect(normalizeSettings({}).onlyShowFixable).toBe(false);
+    expect(normalizeSettings({ onlyShowFixable: true }).onlyShowFixable).toBe(true);
+    expect(normalizeSettings({ onlyShowFixable: "true" }).onlyShowFixable).toBe(false);
   });
 
   it("strips trailing slashes from apiBaseUrl", () => {

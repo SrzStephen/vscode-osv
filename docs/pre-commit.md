@@ -8,6 +8,7 @@ npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, 
 ```
 osv-check [paths...]
   --min-severity low|medium|high|critical   default: low
+  --only-fixable                             hide findings with no official fix yet
   --format text|json                         default: text
   --strict                                   OSV unreachable without cache -> exit 2
   --no-lockfiles                             skip lockfile entries

@@ -198,6 +198,8 @@ export async function prepareDocument(
         const vulns = mergeAliases(records).filter((v) => !ctx.ignores.isIgnored(v) && passesSeverity(v, settings));
         if (vulns.length === 0) continue;
         const fix = calculateFix(records, module.osvEcosystem, c.name, c.version, module.versioning, nameKeyOf(module));
+        // No official fix to move to: hidden when the user only wants actionable findings.
+        if (settings.onlyShowFixable && fix.target === undefined) continue;
         let update: UpdatePlan | undefined;
         if (fix.target !== undefined) {
           try {
