@@ -62,7 +62,7 @@ extension and the language server.
 ```yaml
 repos:
   - repo: https://github.com/SrzStephen/vscode-osv
-    rev: v1.0.0
+    rev: v0.1.0
     hooks:
       - id: osv-check
         args: [--min-severity, high]

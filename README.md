@@ -31,7 +31,6 @@ Supported ecosystems: **npm**, **PyPI**, **Rust** (Cargo), **Java/Kotlin** (Mave
 - **Pre-commit and CI**: the `osv-check` command, see [docs/pre-commit.md](docs/pre-commit.md).
 - **Any editor or AI agent** that speaks LSP: see [docs/agents.md](docs/agents.md).
 
-<!-- TODO: add recorded GIFs before release (Task 25 checklist) -->
 
 ### Supported files
 

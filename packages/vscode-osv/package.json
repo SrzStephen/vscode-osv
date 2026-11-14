@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/SrzStephen/vscode-osv/issues"
   },
-  "publisher": "osv-vscode",
+  "publisher": "srzstephen",
   "icon": "icon.png",
   "private": true,
   "engines": {

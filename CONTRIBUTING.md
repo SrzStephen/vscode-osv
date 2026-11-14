@@ -21,11 +21,10 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 - [x] GitHub repo: `SrzStephen/vscode-osv`. It is used in the pre-commit `repo:` URL in the
       docs and in the packages' `repository` fields.
-- [ ] Choose the Marketplace publisher ID (`<marketplace-publisher>`) and set `publisher` in
-      `packages/vscode-osv/package.json` (currently the placeholder `osv-vscode`).
-- [ ] Decide on the npm package name/scope for `osv-language-server`, remove `"private": true`
-      from `packages/osv-language-server/package.json`, and add `repository` (needed for
-      `--provenance`). (`license` and the LICENSE files are done.)
+- [x] Marketplace publisher ID is `srzstephen` (set in `packages/vscode-osv/package.json`).
+      Create that publisher on the Marketplace and the same namespace on Open VSX.
+- [x] npm package `osv-language-server` (unscoped; name was free when checked). `private` is
+      removed and `repository` and `license` are set.
 - [ ] Set up OIDC publishing (no long-lived `VSCE_PAT` or `NPM_TOKEN`):
   - Create a GitHub environment named `release` (optionally with required reviewers). The
     publish job runs in it.
@@ -46,7 +45,7 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
        `npx ovsx create-namespace <publisher> -p <token>`. Optionally claim ownership of it
        through the Open VSX GitHub issue process so it shows as verified.
     4. Store the token as the `release` environment secret `OVSX_PAT`.
-- [ ] Replace the placeholder `packages/vscode-osv/icon.png` with the real icon.
+- [x] Icon replaced (`packages/vscode-osv/icon.png`).
 
 ### Each release
 
