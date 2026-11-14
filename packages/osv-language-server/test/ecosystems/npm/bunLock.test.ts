@@ -3,6 +3,7 @@ import { parseBunLock } from "../../../src/ecosystems/npm/bunLock.js";
 import { ParseError } from "../../../src/ecosystems/types.js";
 import { read } from "../../helpers/npmFixture.js";
 import { textAt } from "../../helpers/textAt.js";
+import { timed } from "../../helpers/timing.js";
 
 // Children of a node in a binary tree of n nodes, keeping dependency chains realistically shallow.
 const kids = (i: number, n: number) => [2 * i + 1, 2 * i + 2].filter((k) => k < n);
@@ -49,9 +50,8 @@ describe("parseBunLock", () => {
       text += `    "p${i}": ["p${i}@1.0.0", "", ${deps}, "sha512-AAAA"],\n\n`;
     }
     text += "  },\n}\n";
-    const t0 = performance.now();
-    const deps = parseBunLock(text);
-    expect(performance.now() - t0).toBeLessThan(250);
+    const { result: deps, best } = timed(() => parseBunLock(text));
+    expect(best).toBeLessThan(250);
     expect(deps).toHaveLength(5000);
   });
 

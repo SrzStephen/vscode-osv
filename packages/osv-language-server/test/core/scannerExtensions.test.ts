@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from "../../src/core/settings.js";
 import type { DeclaredDep, OsvRecord, PackageQuery, ResolvedDep, TextRange } from "../../src/core/types.js";
 import type { EcosystemModule } from "../../src/ecosystems/types.js";
 import { npmModule } from "../../src/ecosystems/npm/index.js";
-import { memFs, posixResult } from "../helpers/memFs.js";
+import { deepPosix, memFs, posixResult, toPosix } from "../helpers/memFs.js";
 
 // Findings carry native paths and file URIs; compare them in POSIX form on every platform.
 const scanDocument = posixResult(scanDocumentNative);
@@ -109,8 +109,8 @@ describe("scanner contract extensions", () => {
   it("manifestsForLockfile expands *.csproj in the lockfile directory", async () => {
     const mod = fakeModule({ manifestsForLockfile: () => ["Missing.props", "*.csproj"] });
     const files: Record<string, string> = { "/ws/b.csproj": "B", "/ws/a.csproj": "A" };
-    const source: FileSource = { read: async (p) => files[p], list: async () => ["b.csproj", "a.csproj", "x.txt"] };
-    expect(await findManifestForLockfile("/ws/packages.lock.json", mod, source)).toEqual({ path: "/ws/a.csproj", text: "A" });
+    const source: FileSource = { read: async (p) => files[toPosix(p)], list: async () => ["b.csproj", "a.csproj", "x.txt"] };
+    expect(deepPosix(await findManifestForLockfile("/ws/packages.lock.json", mod, source))).toEqual({ path: "/ws/a.csproj", text: "A" });
   });
 
   it("lockfile findings also edit specLocation after resolveExternal", async () => {
