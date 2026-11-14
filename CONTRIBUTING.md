@@ -14,7 +14,7 @@ npm run test:canary                      # live api.osv.dev check; not part of `
 ## Release checklist
 
 Nothing is published automatically from a branch; publishing happens only from the
-`release.yml` workflow, on a pushed `v*` tag. Apart from the one-time npm bootstrap below,
+`release.yml` workflow, started manually from the Actions tab. Apart from the one-time npm bootstrap below,
 never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
 
 ### Open decisions (spec section 18) - resolve before the first release
@@ -54,10 +54,15 @@ never run `vsce publish`, `ovsx publish` or `npm publish` by hand.
      (runs the real extension on a private virtual display; needs `code`, `xvfb-run`, `ffmpeg`, `python3`, network).
    - `docs/media/cli.svg`: in a demo project run `osv-check --min-severity high > out.txt`, then
      `node --import tsx scripts/render-cli-svg.ts out.txt "osv-check --min-severity high" demo-app > docs/media/cli.svg`.
-2. Update `packages/vscode-osv/CHANGELOG.md`.
-3. `npm run release:prepare -- X.Y.Z` bumps both packages' versions and the
-   `osv-language-server@X.Y.Z` pin in `.pre-commit-hooks.yaml` (it validates `X.Y.Z` and
-   edits files only). Then run `npm install` to refresh `package-lock.json`.
-4. Review `git diff`, run the verification commands above, commit.
-5. `git tag vX.Y.Z && git push origin main vX.Y.Z`. The release workflow re-runs all checks,
-   then publishes to the Marketplace, Open VSX and npm and attaches the VSIX to a GitHub release.
+2. Make sure `packages/vscode-osv/CHANGELOG.md` has the release's entries under `## Unreleased`
+   (the release fails if that section is empty) and everything is merged to `main`.
+3. In GitHub go to Actions > Release > Run workflow, on `main`, and enter the bump: `patch`,
+   `minor`, `major`, or an explicit `X.Y.Z`. The workflow bumps both packages' versions and the
+   `osv-language-server@X.Y.Z` pin in `.pre-commit-hooks.yaml`, renames `## Unreleased` to the
+   new version, refreshes `package-lock.json` and re-runs all checks. It then commits the bump
+   to `main`, tags `vX.Y.Z`, publishes to the Marketplace, Open VSX and npm and attaches the
+   VSIX to a GitHub release.
+
+The same bump can be previewed locally with `npm run release:prepare -- minor` (it edits files
+only; discard the changes afterwards). The workflow pushes to `main` with `GITHUB_TOKEN`, so if
+branch protection is enabled on `main`, allow the `github-actions` bot to bypass it.
