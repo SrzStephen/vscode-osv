@@ -4,14 +4,14 @@ A Language Server (LSP) and CLI that report known vulnerabilities from
 [OSV.dev](https://osv.dev) in npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex and Swift dependency manifests and lockfiles, with quick fixes.
 It powers the OSV Vulnerabilities VS Code extension and works with any LSP client.
 
-![osv-check listing four vulnerable dependencies with their fix versions](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/cli.svg)
+![osv-check listing four vulnerable dependencies with their fix versions and a severity breakdown](https://raw.githubusercontent.com/SrzStephen/vscode-osv/main/docs/media/cli.svg)
 
 ## Binaries
 
 | Binary | Purpose |
 |---|---|
 | `osv-language-server --stdio` | The language server (also `--node-ipc`; optional `--cache-dir <dir>`) |
-| `osv-check [paths...]` | CLI scanner for pre-commit hooks and CI. Exit `0` clean, `1` findings, `2` usage error or (`--strict`) network failure |
+| `osv-check [paths...]` | CLI scanner for pre-commit hooks and CI (`--format text\|json\|tree`; flags in [docs/pre-commit.md](../../docs/pre-commit.md#options)). Exit `0` clean, `1` findings, `2` usage error or (`--strict`) network failure |
 
 ```
 npx --yes osv-language-server --stdio

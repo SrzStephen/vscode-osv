@@ -15,6 +15,10 @@
   },
   "publisher": "srzstephen",
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0d1117",
+    "theme": "dark"
+  },
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
@@ -100,20 +104,195 @@
     "commands": [
       {
         "command": "osv.scanWorkspaceUi",
-        "title": "OSV: Scan workspace"
+        "title": "Scan workspace",
+        "category": "OSV",
+        "icon": "$(search)"
       },
       {
         "command": "osv.clearCacheUi",
-        "title": "OSV: Clear cache and rescan"
+        "title": "Clear cache and rescan",
+        "category": "OSV",
+        "icon": "$(refresh)"
       },
       {
         "command": "osv.showLog",
-        "title": "OSV: Show output log"
+        "title": "Show output log",
+        "category": "OSV",
+        "icon": "$(output)"
+      },
+      {
+        "command": "osv.overview.refresh",
+        "title": "Refresh vulnerabilities view",
+        "category": "OSV",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "osv.overview.groupBySeverity",
+        "title": "Group by severity",
+        "category": "OSV",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "osv.overview.groupByFile",
+        "title": "Group by file",
+        "category": "OSV",
+        "icon": "$(files)"
+      },
+      {
+        "command": "osv.overview.reveal",
+        "title": "Reveal in editor",
+        "category": "OSV"
+      },
+      {
+        "command": "osv.overview.fix",
+        "title": "Apply fix",
+        "category": "OSV",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "osv.overview.ignore",
+        "title": "Ignore vulnerability",
+        "category": "OSV",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "osv.overview.openAdvisory",
+        "title": "Open advisory on osv.dev",
+        "category": "OSV",
+        "icon": "$(link-external)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "osv",
+          "title": "OSV Vulnerabilities",
+          "icon": "media/osv-activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "osv": [
+        {
+          "id": "osv.overview",
+          "name": "Vulnerabilities"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "osv.overview",
+        "contents": "No known vulnerabilities found yet.\n[Scan workspace](command:osv.scanWorkspaceUi)\nOpen a dependency manifest or lockfile, or scan the whole workspace, to see results here."
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "osv.overview.reveal",
+          "when": "false"
+        },
+        {
+          "command": "osv.overview.fix",
+          "when": "false"
+        },
+        {
+          "command": "osv.overview.ignore",
+          "when": "false"
+        },
+        {
+          "command": "osv.overview.openAdvisory",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "osv.scanWorkspaceUi",
+          "when": "view == osv.overview",
+          "group": "navigation@1"
+        },
+        {
+          "command": "osv.overview.groupBySeverity",
+          "when": "view == osv.overview && config.osv.overview.groupBy != severity",
+          "group": "navigation@2"
+        },
+        {
+          "command": "osv.overview.groupByFile",
+          "when": "view == osv.overview && config.osv.overview.groupBy == severity",
+          "group": "navigation@2"
+        },
+        {
+          "command": "osv.clearCacheUi",
+          "when": "view == osv.overview",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "osv.showLog",
+          "when": "view == osv.overview",
+          "group": "1_actions@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "osv.overview.fix",
+          "when": "view == osv.overview && viewItem == osv.entry.fixable",
+          "group": "inline@1"
+        },
+        {
+          "command": "osv.overview.openAdvisory",
+          "when": "view == osv.overview && viewItem =~ /^osv\\.entry/",
+          "group": "inline@2"
+        },
+        {
+          "command": "osv.overview.ignore",
+          "when": "view == osv.overview && viewItem =~ /^osv\\.entry/",
+          "group": "inline@3"
+        },
+        {
+          "command": "osv.overview.fix",
+          "when": "view == osv.overview && viewItem == osv.entry.fixable",
+          "group": "1_fix@1"
+        },
+        {
+          "command": "osv.overview.ignore",
+          "when": "view == osv.overview && viewItem =~ /^osv\\.entry/",
+          "group": "2_manage@1"
+        },
+        {
+          "command": "osv.overview.openAdvisory",
+          "when": "view == osv.overview && viewItem =~ /^osv\\.entry/",
+          "group": "2_manage@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "osv.scanWorkspaceUi",
+          "when": "osv.activeFileScanned",
+          "group": "navigation@90"
+        },
+        {
+          "command": "osv.clearCacheUi",
+          "when": "osv.activeFileScanned",
+          "group": "navigation@91"
+        }
+      ]
+    },
     "configuration": {
       "title": "OSV",
       "properties": {
+        "osv.overview.groupBy": {
+          "type": "string",
+          "default": "file",
+          "enum": [
+            "file",
+            "severity"
+          ],
+          "enumDescriptions": [
+            "Group vulnerable dependencies by the file that declares them.",
+            "Group vulnerable dependencies by severity."
+          ],
+          "scope": "window",
+          "description": "How the Vulnerabilities view groups findings."
+        },
         "osv.enable": {
           "type": "boolean",
           "default": true,

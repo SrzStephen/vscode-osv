@@ -51,6 +51,7 @@ export function toDiagnostic(f: Finding): Diagnostic {
       current: f.current,
       target: f.fix.target,
       vulnIds: f.vulns.map((v) => v.id),
+      severity: f.severity,
       direct: f.direct,
       lockCommand: f.update?.lockCommand,
     },

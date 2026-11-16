@@ -9,7 +9,8 @@ describe("renderHover", () => {
     const ignoreArgs = encodeURIComponent(JSON.stringify([{ id: "GHSA-aaaa-bbbb-cccc" }]));
     expect(md).toContain("**qs 1.0.0** — 1 known vulnerability");
     expect(md).toContain("- 🟠 [GHSA-aaaa-bbbb-cccc](https://osv.dev/vulnerability/GHSA-aaaa-bbbb-cccc) High — Prototype pollution");
-    expect(md).toContain("Suggested: **2.0.0** (fixes all 1)");
+    expect(md).toContain("**qs 1.0.0** — 1 known vulnerability · 🟠 High");
+    expect(md).toContain("✅ **Fixed in 2.0.0** (fixes all 1)");
     expect(md).toContain(`[Update to 2.0.0](command:osv.update?${args})`);
     expect(md).toContain("[View on osv.dev](https://osv.dev/vulnerability/GHSA-aaaa-bbbb-cccc)");
     expect(md).toContain(`[Ignore GHSA-aaaa-bbbb-cccc](command:osv.ignore?${ignoreArgs})`);
@@ -25,6 +26,23 @@ describe("renderHover", () => {
     expect(md).toContain("- 🔵 [D-4](https://osv.dev/vulnerability/D-4) Low — summary D\\-4");
     expect(md).toContain("- ⚪ [E-5](https://osv.dev/vulnerability/E-5) Unknown — summary E\\-5");
     expect(md).toContain("(fixes all 5)");
+  });
+
+  it("puts the fix and its actions above the advisory list (VS Code clips tall hovers)", () => {
+    const md = renderHover(finding({ vulns: [vuln("A-1"), vuln("B-2"), vuln("C-3")] }));
+    const fixAt = md.indexOf("Fixed in");
+    const updateAt = md.indexOf("command:osv.update");
+    const firstRow = md.indexOf("- 🟠");
+    expect(fixAt).toBeGreaterThan(-1);
+    expect(fixAt).toBeLessThan(updateAt);
+    expect(updateAt).toBeLessThan(firstRow);
+  });
+
+  it("lists aliases (escaped) after the summary and shows the overall severity badge", () => {
+    const vulns = [{ ...vuln("GHSA-aaaa-bbbb-cccc", "critical"), aliases: ["CVE-2024-0001", "evil*alias"] }];
+    const md = renderHover(finding({ vulns, severity: "critical" }));
+    expect(md).toContain("· 🔴 Critical");
+    expect(md).toContain("— summary GHSA\\-aaaa\\-bbbb\\-cccc _(CVE-2024-0001, evil\\*alias)_");
   });
 
   it("escapes summaries and encodes command args", () => {
@@ -52,7 +70,7 @@ describe("renderHover", () => {
     expect(md).not.toContain("](javascript:");
     expect(md.split("\n").filter((l) => l.startsWith("- "))).toHaveLength(1);
     expect(md).toContain("[GHSA-x\\]\\(javascript:alert\\(1\\)\\) - \\[y\\]\\(command:osv.update?1\\)](https://osv.dev/vulnerability/GHSA-x%5D%28javascript%3Aalert%281%29%29%0A-%20%5By%5D%28command%3Aosv.update%3F1%29)");
-    expect(md).toContain("Suggested: **2.0.0\\*\\*\\]\\(command:osv.ignore?1\\)**");
+    expect(md).toContain("✅ **Fixed in 2.0.0\\*\\*\\]\\(command:osv.ignore?1\\)**");
   });
 
   it("does not print 'undefined' in the update title without a target", () => {
@@ -65,7 +83,7 @@ describe("renderHover", () => {
     const md = renderHover(finding({ update: undefined, fix: { target: undefined, crossesMajor: false, fixesAll: false } }));
     expect(md).not.toContain("command:osv.update");
     expect(md).toContain("⚠ No fixed version available");
-    expect(md).not.toContain("Suggested:");
+    expect(md).not.toContain("Fixed in");
     expect(md).toContain("[View on osv.dev]");
     expect(md).toContain("command:osv.ignore");
   });

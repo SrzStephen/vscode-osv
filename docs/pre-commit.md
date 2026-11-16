@@ -6,15 +6,59 @@ the VS Code extension and reports known vulnerabilities (from [OSV.dev](https://
 npm, PyPI, Cargo, Maven/Gradle, Go, NuGet, RubyGems, Packagist, GitHub Actions, Pub, Hex and Swift manifests and lockfiles.
 
 ```
-osv-check [paths...]
-  --min-severity low|medium|high|critical   default: low
-  --only-fixable                             hide findings with no official fix yet
-  --format text|json                         default: text
-  --strict                                   OSV unreachable without cache -> exit 2
-  --no-lockfiles                             skip lockfile entries
-  --cache-dir <dir>                          override cache location
-  --api-base-url <url>                       override OSV API base
+osv-check [options] [paths...]
 ```
+
+## Options
+
+| Flag | Default | VS Code setting | Description |
+|---|---|---|---|
+| `--min-severity <level>` | `low` | `osv.minimumSeverity` | Hide findings below `low`, `medium`, `high` or `critical` |
+| `--only-fixable` | off | `osv.onlyShowFixable` | Hide findings with no official fix (no fixed version in the OSV record) |
+| `--no-lockfiles` | lockfiles scanned | `osv.scanLockfiles` (inverted) | Skip lockfile entries |
+| `--disable-ecosystem <id>` | all enabled | `osv.ecosystems` (`{ "<id>": false }`) | Do not scan an ecosystem. Repeatable. Ids: `npm`, `pypi`, `cargo`, `maven`, `go`, `nuget`, `rubygems`, `packagist`, `githubActions`, `pub`, `hex`, `swift` |
+| `--ignore <id>` | none | `osv.ignoredVulnerabilities` | Suppress a vulnerability by any alias (GHSA, CVE, PYSEC, ...). Repeatable. `osv-scanner.toml` is honoured as well |
+| `--cache-dir <dir>` | per-user cache | (the server's `--cache-dir`) | Override the cache location |
+| `--cache-ttl-hours <n>` | `48` | `osv.cacheTtlHours` | How long cached package results stay fresh (minimum 1) |
+| `--api-base-url <url>` | `https://api.osv.dev` | `osv.apiBaseUrl` | OSV API base, for a mirror or proxy |
+| `--ca-certificate-path <file>` | none | `osv.caCertificatePath` | PEM file of extra CA certificates to trust. Without it `SSL_CERT_FILE` and `SSL_CERT_DIR` are used |
+| `--format <format>` | `text` | none | `text`, `json` or `tree` (below) |
+| `--strict` | off | none | Exit `2` when OSV is unreachable and nothing is cached |
+| `--help`, `--version` | | | |
+
+The extension settings `osv.enable`, `osv.scanWorkspaceOnStartup`, `osv.offerLockCommand` and
+`osv.overview.groupBy` have no CLI equivalent: they only affect editor behaviour.
+Proxies are read from `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`.
+
+## Output formats
+
+`--format text` (default) prints one line per finding and a severity breakdown.
+
+`--format json` prints `{ "findings": Finding[], "offline": boolean }`, the same `Finding`
+shape as the language server's `osv.getFindings`.
+
+`--format tree` prints a `tree`-style listing of directories, files, vulnerable dependencies and
+their advisories. It is plain Unicode with no colour and one node per line, so it reads well in
+CI logs and is easy to `grep`. Combined with `--only-fixable` it lists only what an upgrade
+can resolve:
+
+```
+$ osv-check --format tree --only-fixable
+.
+├── api
+│   └── requirements.txt
+│       └── requests 2.19.0 → 2.33.0 [high] (line 1)
+│           ├── GHSA-x84v-xcm2-53pg (CVE-2018-18074) [high] Insufficiently Protected Credentials in Requests
+│           └── GHSA-9hjg-9r4m-mvj7 (CVE-2024-47081) [medium] Requests vulnerable to .netrc credentials leak via malicious URLs
+└── package.json
+    └── minimist 1.2.0 → 1.2.6 [critical] (line 6)
+        ├── GHSA-xvch-5gv4-984h (CVE-2021-44906) [critical] Prototype Pollution in minimist
+        └── GHSA-vh95-rmgr-6w4m (CVE-2020-7598) [medium] Prototype Pollution in minimist
+
+2 vulnerable dependencies in 2 files
+```
+
+![osv-check --format tree --only-fixable listing vulnerable dependencies and their advisories as a tree](media/cli-tree.svg)
 
 Paths that are not recognised manifests or lockfiles are ignored, so a hook can safely pass
 every staged file. **With no paths, `osv-check` scans the whole tree under the current
@@ -125,6 +169,6 @@ the command when no staged file matches, so it is never run with an empty path l
   run: npx --yes --package osv-language-server osv-check --strict --format json
 ```
 
-This scans the whole checkout. `--format json` prints
-`{ "findings": Finding[], "offline": boolean }` on stdout; the step fails on exit code `1`
+This scans the whole checkout. `--format json` (or `--format tree` for a readable log) writes to
+stdout; the step fails on exit code `1`
 (findings) or `2` (OSV unreachable with `--strict`).

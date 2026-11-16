@@ -56,6 +56,7 @@ describe("toDiagnostic", () => {
       current: "1.0.0",
       target: "2.0.0",
       vulnIds: ["GHSA-aaaa-bbbb-cccc"],
+      severity: "high",
       direct: true,
       lockCommand: { cwd: "/w", command: "npm install" },
     });
